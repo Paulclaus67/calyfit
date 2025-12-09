@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowUp, ArrowDown, X } from "lucide-react";
 
 type SessionOption = {
   id: string;
@@ -31,6 +32,9 @@ type ExerciseGroups = Record<string, ExerciseOption[]>;
 type SessionDetailResponse = {
   id: string;
   name: string;
+  type: string;
+  rounds?: number | null;
+  estimatedDurationMinutes: number | null;
   items: {
     exerciseId: string;
     exerciseName: string;
@@ -57,7 +61,6 @@ export default function SessionsManageClient() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // Charger les séances + exos
   useEffect(() => {
@@ -122,8 +125,6 @@ export default function SessionsManageClient() {
     async function loadDetail(sessionId: string) {
       setItems([]);
       setErrorMsg(null);
-      setSuccessMsg(null);
-
       try {
         const res = await fetch(`/api/sessions/detail?sessionId=${sessionId}`);
         if (!res.ok) {
@@ -188,90 +189,78 @@ export default function SessionsManageClient() {
     );
   }
 
-  function handleMoveItem(index: number, direction: "up" | "down") {
-    setItems((prev) => {
-      const newArr = [...prev];
-      const targetIndex = direction === "up" ? index - 1 : index + 1;
-      if (targetIndex < 0 || targetIndex >= newArr.length) return prev;
-      const tmp = newArr[index];
-      newArr[index] = newArr[targetIndex];
-      newArr[targetIndex] = tmp;
-      return newArr;
-    });
-  }
-
   function handleRemoveItem(index: number) {
+    const exName = items[index]?.exerciseName ?? "cet exercice";
+    const confirmDelete = window.confirm(
+      `Tu es sûr de vouloir supprimer ${exName} de cette séance ?`
+    );
+    if (!confirmDelete) return;
+
     setItems((prev) => prev.filter((_, i) => i !== index));
   }
 
-  async function handleSave() {
-  if (!selectedSessionId) return;
-  if (items.length === 0) {
-    setErrorMsg("Ajoute au moins un exercice à la séance.");
-    setSuccessMsg(null);
-    return;
-  }
-  setSaving(true);
-  setErrorMsg(null);
-  setSuccessMsg(null);
+  function moveItem(index: number, direction: -1 | 1) {
+    const newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= items.length) return;
 
-  try {
-    const payload = {
-      sessionId: selectedSessionId,
-      name: sessionName,
-      items: items.map((it) => ({
-        exerciseId: it.exerciseId,
-        sets: it.sets,
-        reps: it.reps,
-        restSeconds: it.restSeconds,
-      })),
-    };
-
-    const res = await fetch("/api/sessions/update", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+    setItems((prev) => {
+      const copy = [...prev];
+      const [removed] = copy.splice(index, 1);
+      copy.splice(newIndex, 0, removed);
+      return copy;
     });
+  }
 
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setErrorMsg(
-        data.error || "Impossible d'enregistrer la séance."
-      );
-      setSaving(false);
+  async function handleSave() {
+    if (!selectedSessionId) return;
+    if (items.length === 0) {
+      setErrorMsg("Ajoute au moins un exercice à la séance.");
       return;
     }
-
-    setSaving(false);
+    setSaving(true);
     setErrorMsg(null);
-    setSuccessMsg("Séance enregistrée ✔");
 
-    // 🔔 petite vibration si dispo (Android / certains navigateurs)
-    if (typeof window !== "undefined" && "vibrate" in navigator) {
-      // @ts-ignore – l'API n'est pas toujours typée
-      navigator.vibrate?.(40);
+    try {
+      const payload = {
+        sessionId: selectedSessionId,
+        name: sessionName,
+        items: items.map((it, order) => ({
+          exerciseId: it.exerciseId,
+          sets: it.sets,
+          reps: it.reps,
+          restSeconds: it.restSeconds,
+          order,
+        })),
+      };
+
+      const res = await fetch("/api/sessions/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setErrorMsg(
+          data.error || "Impossible d'enregistrer la séance."
+        );
+        setSaving(false);
+        return;
+      }
+
+      setSaving(false);
+      router.refresh();
+    } catch (e) {
+      console.error(e);
+      setErrorMsg("Erreur inattendue lors de l'enregistrement.");
+      setSaving(false);
     }
-
-    router.refresh();
-
-    // On masque le message après quelques secondes
-    setTimeout(() => {
-      setSuccessMsg(null);
-    }, 2500);
-  } catch (e) {
-    console.error(e);
-    setErrorMsg("Erreur inattendue lors de l'enregistrement.");
-    setSaving(false);
   }
-}
-
 
   if (loading) {
     return (
       <main className="px-4 pb-4 pt-3">
-        <p className="text-sm text-slate-200">
-          Chargement des séances…
-        </p>
+        <p className="text-sm text-slate-200">Chargement des séances…</p>
       </main>
     );
   }
@@ -309,18 +298,14 @@ export default function SessionsManageClient() {
           Personnalise tes séances
         </h1>
         <p className="text-xs text-slate-400">
-          Adapte les exercices, séries et repos à ton niveau et à ta
-          façon de t&apos;entraîner.
+          Adapte les exercices, séries et repos à ton niveau. Tu peux aussi
+          changer l&apos;ordre des exercices pour coller à ta routine.
         </p>
       </header>
 
       {errorMsg && (
         <p className="text-[11px] text-red-300">{errorMsg}</p>
       )}
-      {errorMsg && (
-  <p className="text-[11px] text-red-300">{errorMsg}</p>
-)}
-
 
       {/* Séance à personnaliser */}
       <section className="rounded-3xl border border-slate-800 bg-slate-950/90 px-3 py-3 space-y-2">
@@ -365,8 +350,8 @@ export default function SessionsManageClient() {
           placeholder={selectedSession?.name ?? "Nom de la séance"}
         />
         <p className="text-[10px] text-slate-500">
-          Donne un nom qui te parle (ex: “Dos + biceps lourd”, “Full
-          body rapide”…).
+          Donne un nom qui te parle (ex: “Dos + biceps lourd”, “Full body
+          rapide”…).
         </p>
       </section>
 
@@ -388,104 +373,124 @@ export default function SessionsManageClient() {
         )}
 
         <div className="space-y-2">
-          {items.map((it, index) => (
-            <div
-              key={index}
-              className="rounded-2xl border border-slate-800 bg-slate-900/80 px-3 py-2 space-y-2"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <p className="text-[12px] font-medium text-slate-100">
-                    {index + 1}. {it.exerciseName}
-                  </p>
-                  <p className="text-[10px] text-slate-500">
-                    {it.muscleGroup}
-                  </p>
-                </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => handleMoveItem(index, "up")}
-                    className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-700 bg-slate-900 text-[10px] text-slate-300 disabled:opacity-30"
-                    disabled={index === 0}
-                  >
-                    ↑
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleMoveItem(index, "down")}
-                    className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-700 bg-slate-900 text-[10px] text-slate-300 disabled:opacity-30"
-                    disabled={index === items.length - 1}
-                  >
-                    ↓
-                  </button>
+          {items.map((it, index) => {
+            const isFirst = index === 0;
+            const isLast = index === items.length - 1;
+
+            return (
+              <div
+                key={index}
+                className="rounded-2xl border border-slate-800 bg-slate-900/80 px-3 py-2.5 space-y-2"
+              >
+                {/* Ligne titre + boutons ordre/suppression */}
+                <div className="flex items-center gap-3">
+                  {/* colonne up/down */}
+                  <div className="flex flex-col items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => moveItem(index, -1)}
+                      disabled={isFirst}
+                      className={
+                        "inline-flex h-7 w-7 items-center justify-center rounded-full text-[10px] " +
+                        (isFirst
+                          ? "text-slate-600 opacity-40"
+                          : "text-slate-100 bg-slate-800 hover:bg-slate-700")
+                      }
+                      aria-label="Monter cet exercice"
+                    >
+                      <ArrowUp className="h-3 w-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => moveItem(index, 1)}
+                      disabled={isLast}
+                      className={
+                        "inline-flex h-7 w-7 items-center justify-center rounded-full text-[10px] " +
+                        (isLast
+                          ? "text-slate-600 opacity-40"
+                          : "text-slate-100 bg-slate-800 hover:bg-slate-700")
+                      }
+                      aria-label="Descendre cet exercice"
+                    >
+                      <ArrowDown className="h-3 w-3" />
+                    </button>
+                  </div>
+
+                  {/* titre */}
+                  <div className="flex-1">
+                    <p className="text-[12px] font-semibold text-slate-100">
+                      {index + 1}. {it.exerciseName}
+                    </p>
+                    <p className="text-[10px] text-slate-500">
+                      {it.muscleGroup}
+                    </p>
+                  </div>
+
+                  {/* suppression */}
                   <button
                     type="button"
                     onClick={() => handleRemoveItem(index)}
-                    className="flex h-6 w-6 items-center justify-center rounded-full bg-red-900/40 text-[12px] text-red-200 hover:bg-red-900/60"
-                    aria-label="Supprimer l'exercice"
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-red-500/10 text-[10px] text-red-300 hover:bg-red-500/20"
+                    aria-label="Supprimer cet exercice"
                   >
-                    ✕
+                    <X className="h-3 w-3" />
                   </button>
                 </div>
-              </div>
 
-              <div className="flex items-center gap-2 text-[11px]">
-                <div className="flex flex-1 flex-col">
-                  <span className="text-[10px] text-slate-500">
-                    Séries
-                  </span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={20}
-                    value={it.sets}
-                    onChange={(e) =>
-                      handleChangeItem(index, {
-                        sets: Number(e.target.value) || 1,
-                      })
-                    }
-                    className="w-full rounded-xl border border-slate-700 bg-slate-950 px-2 py-1 text-[11px] text-slate-100"
-                  />
-                </div>
-                <div className="flex flex-1 flex-col">
-                  <span className="text-[10px] text-slate-500">
-                    Reps
-                  </span>
-                  <input
-                    type="text"
-                    value={it.reps}
-                    onChange={(e) =>
-                      handleChangeItem(index, { reps: e.target.value })
-                    }
-                    className="w-full rounded-xl border border-slate-700 bg-slate-950 px-2 py-1 text-[11px] text-slate-100"
-                    placeholder="8-12"
-                  />
-                </div>
-                <div className="flex flex-1 flex-col">
-                  <span className="text-[10px] text-slate-500">
-                    Repos (sec)
-                  </span>
-                  <input
-                    type="number"
-                    min={0}
-                    max={600}
-                    value={it.restSeconds ?? ""}
-                    onChange={(e) =>
-                      handleChangeItem(index, {
-                        restSeconds:
-                          e.target.value === ""
-                            ? null
-                            : Number(e.target.value),
-                      })
-                    }
-                    className="w-full rounded-xl border border-slate-700 bg-slate-950 px-2 py-1 text-[11px] text-slate-100"
-                    placeholder="90"
-                  />
+                {/* Ligne inputs en grid, bien alignée */}
+                <div className="grid grid-cols-3 gap-2 text-[11px]">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-slate-500">Séries</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={20}
+                      value={it.sets}
+                      onChange={(e) =>
+                        handleChangeItem(index, {
+                          sets: Number(e.target.value) || 1,
+                        })
+                      }
+                      className="w-full rounded-xl border border-slate-700 bg-slate-950 px-2 py-1 text-[11px] text-slate-100"
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-slate-500">Reps</span>
+                    <input
+                      type="text"
+                      value={it.reps}
+                      onChange={(e) =>
+                        handleChangeItem(index, { reps: e.target.value })
+                      }
+                      className="w-full rounded-xl border border-slate-700 bg-slate-950 px-2 py-1 text-[11px] text-slate-100"
+                      placeholder="8-12"
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-slate-500">
+                      Repos (sec)
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={600}
+                      value={it.restSeconds ?? ""}
+                      onChange={(e) =>
+                        handleChangeItem(index, {
+                          restSeconds:
+                            e.target.value === ""
+                              ? null
+                              : Number(e.target.value),
+                        })
+                      }
+                      className="w-full rounded-xl border border-slate-700 bg-slate-950 px-2 py-1 text-[11px] text-slate-100"
+                      placeholder="90"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 
@@ -535,17 +540,6 @@ export default function SessionsManageClient() {
           </div>
         )}
       </section>
-
-      {/* Toast de succès, visible près du bouton de sauvegarde */}
-{successMsg && (
-  <div className="mb-2 flex justify-center">
-    <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/70 bg-emerald-500/15 px-3 py-1.5 text-[11px] text-emerald-50 shadow-[0_0_15px_rgba(16,185,129,0.35)]">
-      <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 shadow-[0_0_8px_rgba(52,211,153,0.9)]" />
-      <span>{successMsg}</span>
-    </div>
-  </div>
-)}
-
 
       {/* Bouton sauvegarde */}
       <button

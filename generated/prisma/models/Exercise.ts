@@ -27,21 +27,18 @@ export type AggregateExercise = {
 export type ExerciseMinAggregateOutputType = {
   id: string | null
   name: string | null
-  slug: string | null
   muscleGroup: string | null
 }
 
 export type ExerciseMaxAggregateOutputType = {
   id: string | null
   name: string | null
-  slug: string | null
   muscleGroup: string | null
 }
 
 export type ExerciseCountAggregateOutputType = {
   id: number
   name: number
-  slug: number
   muscleGroup: number
   _all: number
 }
@@ -50,21 +47,18 @@ export type ExerciseCountAggregateOutputType = {
 export type ExerciseMinAggregateInputType = {
   id?: true
   name?: true
-  slug?: true
   muscleGroup?: true
 }
 
 export type ExerciseMaxAggregateInputType = {
   id?: true
   name?: true
-  slug?: true
   muscleGroup?: true
 }
 
 export type ExerciseCountAggregateInputType = {
   id?: true
   name?: true
-  slug?: true
   muscleGroup?: true
   _all?: true
 }
@@ -144,7 +138,6 @@ export type ExerciseGroupByArgs<ExtArgs extends runtime.Types.Extensions.Interna
 export type ExerciseGroupByOutputType = {
   id: string
   name: string
-  slug: string | null
   muscleGroup: string | null
   _count: ExerciseCountAggregateOutputType | null
   _min: ExerciseMinAggregateOutputType | null
@@ -172,7 +165,6 @@ export type ExerciseWhereInput = {
   NOT?: Prisma.ExerciseWhereInput | Prisma.ExerciseWhereInput[]
   id?: Prisma.StringFilter<"Exercise"> | string
   name?: Prisma.StringFilter<"Exercise"> | string
-  slug?: Prisma.StringNullableFilter<"Exercise"> | string | null
   muscleGroup?: Prisma.StringNullableFilter<"Exercise"> | string | null
   sessionExercises?: Prisma.SessionExerciseListRelationFilter
 }
@@ -180,26 +172,23 @@ export type ExerciseWhereInput = {
 export type ExerciseOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  slug?: Prisma.SortOrderInput | Prisma.SortOrder
   muscleGroup?: Prisma.SortOrderInput | Prisma.SortOrder
   sessionExercises?: Prisma.SessionExerciseOrderByRelationAggregateInput
 }
 
 export type ExerciseWhereUniqueInput = Prisma.AtLeast<{
   id?: string
-  slug?: string
   AND?: Prisma.ExerciseWhereInput | Prisma.ExerciseWhereInput[]
   OR?: Prisma.ExerciseWhereInput[]
   NOT?: Prisma.ExerciseWhereInput | Prisma.ExerciseWhereInput[]
   name?: Prisma.StringFilter<"Exercise"> | string
   muscleGroup?: Prisma.StringNullableFilter<"Exercise"> | string | null
   sessionExercises?: Prisma.SessionExerciseListRelationFilter
-}, "id" | "slug">
+}, "id">
 
 export type ExerciseOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  slug?: Prisma.SortOrderInput | Prisma.SortOrder
   muscleGroup?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.ExerciseCountOrderByAggregateInput
   _max?: Prisma.ExerciseMaxOrderByAggregateInput
@@ -212,14 +201,12 @@ export type ExerciseScalarWhereWithAggregatesInput = {
   NOT?: Prisma.ExerciseScalarWhereWithAggregatesInput | Prisma.ExerciseScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"Exercise"> | string
   name?: Prisma.StringWithAggregatesFilter<"Exercise"> | string
-  slug?: Prisma.StringNullableWithAggregatesFilter<"Exercise"> | string | null
   muscleGroup?: Prisma.StringNullableWithAggregatesFilter<"Exercise"> | string | null
 }
 
 export type ExerciseCreateInput = {
   id?: string
   name: string
-  slug?: string | null
   muscleGroup?: string | null
   sessionExercises?: Prisma.SessionExerciseCreateNestedManyWithoutExerciseInput
 }
@@ -227,7 +214,6 @@ export type ExerciseCreateInput = {
 export type ExerciseUncheckedCreateInput = {
   id?: string
   name: string
-  slug?: string | null
   muscleGroup?: string | null
   sessionExercises?: Prisma.SessionExerciseUncheckedCreateNestedManyWithoutExerciseInput
 }
@@ -235,7 +221,6 @@ export type ExerciseUncheckedCreateInput = {
 export type ExerciseUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   muscleGroup?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sessionExercises?: Prisma.SessionExerciseUpdateManyWithoutExerciseNestedInput
 }
@@ -243,7 +228,6 @@ export type ExerciseUpdateInput = {
 export type ExerciseUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   muscleGroup?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sessionExercises?: Prisma.SessionExerciseUncheckedUpdateManyWithoutExerciseNestedInput
 }
@@ -251,42 +235,36 @@ export type ExerciseUncheckedUpdateInput = {
 export type ExerciseCreateManyInput = {
   id?: string
   name: string
-  slug?: string | null
   muscleGroup?: string | null
 }
 
 export type ExerciseUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   muscleGroup?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type ExerciseUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   muscleGroup?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type ExerciseCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  slug?: Prisma.SortOrder
   muscleGroup?: Prisma.SortOrder
 }
 
 export type ExerciseMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  slug?: Prisma.SortOrder
   muscleGroup?: Prisma.SortOrder
 }
 
 export type ExerciseMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  slug?: Prisma.SortOrder
   muscleGroup?: Prisma.SortOrder
 }
 
@@ -312,14 +290,12 @@ export type ExerciseUpdateOneRequiredWithoutSessionExercisesNestedInput = {
 export type ExerciseCreateWithoutSessionExercisesInput = {
   id?: string
   name: string
-  slug?: string | null
   muscleGroup?: string | null
 }
 
 export type ExerciseUncheckedCreateWithoutSessionExercisesInput = {
   id?: string
   name: string
-  slug?: string | null
   muscleGroup?: string | null
 }
 
@@ -342,14 +318,12 @@ export type ExerciseUpdateToOneWithWhereWithoutSessionExercisesInput = {
 export type ExerciseUpdateWithoutSessionExercisesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   muscleGroup?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type ExerciseUncheckedUpdateWithoutSessionExercisesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   muscleGroup?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
@@ -387,7 +361,6 @@ export type ExerciseCountOutputTypeCountSessionExercisesArgs<ExtArgs extends run
 export type ExerciseSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   name?: boolean
-  slug?: boolean
   muscleGroup?: boolean
   sessionExercises?: boolean | Prisma.Exercise$sessionExercisesArgs<ExtArgs>
   _count?: boolean | Prisma.ExerciseCountOutputTypeDefaultArgs<ExtArgs>
@@ -396,25 +369,22 @@ export type ExerciseSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
 export type ExerciseSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   name?: boolean
-  slug?: boolean
   muscleGroup?: boolean
 }, ExtArgs["result"]["exercise"]>
 
 export type ExerciseSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   name?: boolean
-  slug?: boolean
   muscleGroup?: boolean
 }, ExtArgs["result"]["exercise"]>
 
 export type ExerciseSelectScalar = {
   id?: boolean
   name?: boolean
-  slug?: boolean
   muscleGroup?: boolean
 }
 
-export type ExerciseOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "slug" | "muscleGroup", ExtArgs["result"]["exercise"]>
+export type ExerciseOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "muscleGroup", ExtArgs["result"]["exercise"]>
 export type ExerciseInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   sessionExercises?: boolean | Prisma.Exercise$sessionExercisesArgs<ExtArgs>
   _count?: boolean | Prisma.ExerciseCountOutputTypeDefaultArgs<ExtArgs>
@@ -430,7 +400,6 @@ export type $ExercisePayload<ExtArgs extends runtime.Types.Extensions.InternalAr
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     name: string
-    slug: string | null
     muscleGroup: string | null
   }, ExtArgs["result"]["exercise"]>
   composites: {}
@@ -858,7 +827,6 @@ export interface Prisma__ExerciseClient<T, Null = never, ExtArgs extends runtime
 export interface ExerciseFieldRefs {
   readonly id: Prisma.FieldRef<"Exercise", 'String'>
   readonly name: Prisma.FieldRef<"Exercise", 'String'>
-  readonly slug: Prisma.FieldRef<"Exercise", 'String'>
   readonly muscleGroup: Prisma.FieldRef<"Exercise", 'String'>
 }
     

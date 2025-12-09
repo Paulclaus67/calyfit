@@ -297,7 +297,7 @@ export type WeekDayCreateInput = {
   isRest?: boolean
   warmupMinutes?: number | null
   warmupDescription?: string | null
-  session?: Prisma.SessionCreateNestedOneWithoutWeekDaysInput
+  session?: Prisma.SessionCreateNestedOneWithoutDaysInput
   weekPlan: Prisma.WeekPlanCreateNestedOneWithoutDaysInput
 }
 
@@ -317,7 +317,7 @@ export type WeekDayUpdateInput = {
   isRest?: Prisma.BoolFieldUpdateOperationsInput | boolean
   warmupMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   warmupDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  session?: Prisma.SessionUpdateOneWithoutWeekDaysNestedInput
+  session?: Prisma.SessionUpdateOneWithoutDaysNestedInput
   weekPlan?: Prisma.WeekPlanUpdateOneRequiredWithoutDaysNestedInput
 }
 
@@ -553,7 +553,7 @@ export type WeekDayCreateWithoutWeekPlanInput = {
   isRest?: boolean
   warmupMinutes?: number | null
   warmupDescription?: string | null
-  session?: Prisma.SessionCreateNestedOneWithoutWeekDaysInput
+  session?: Prisma.SessionCreateNestedOneWithoutDaysInput
 }
 
 export type WeekDayUncheckedCreateWithoutWeekPlanInput = {
@@ -641,7 +641,7 @@ export type WeekDayUpdateWithoutWeekPlanInput = {
   isRest?: Prisma.BoolFieldUpdateOperationsInput | boolean
   warmupMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   warmupDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  session?: Prisma.SessionUpdateOneWithoutWeekDaysNestedInput
+  session?: Prisma.SessionUpdateOneWithoutDaysNestedInput
 }
 
 export type WeekDayUncheckedUpdateWithoutWeekPlanInput = {
