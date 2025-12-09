@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { DayName } from "@/lib/types";
-import { getMonthStats, getYearStats } from "@/lib/history";
+import {
+  getSessionDoneToday,
+  getSessionsDoneThisWeek,
+} from "@/lib/history";
 
 const DAY_LABELS_FR: Record<DayName, string> = {
   monday: "Lundi",
@@ -15,10 +18,14 @@ const DAY_LABELS_FR: Record<DayName, string> = {
   sunday: "Dimanche",
 };
 
-type Stats = {
-  sessionsDone: number;
-  totalSets: number;
-  totalDurationSeconds: number;
+const DAY_LABELS_SHORT_FR: Record<DayName, string> = {
+  monday: "Lun",
+  tuesday: "Mar",
+  wednesday: "Mer",
+  thursday: "Jeu",
+  friday: "Ven",
+  saturday: "Sam",
+  sunday: "Dim",
 };
 
 export type HomeSessionItemPreview = {
@@ -33,11 +40,21 @@ export type HomeSessionItemPreview = {
 };
 
 export type HomeSession = {
+  id: string;
   slug: string;
   name: string;
   type: "classic" | "circuit";
   estimatedDurationMinutes: number | null;
   itemsPreview: HomeSessionItemPreview[];
+};
+
+export type HomeWeekDay = {
+  day: DayName;
+  hasSession: boolean;
+  isRest: boolean;
+  sessionId: string | null;
+  sessionSlug: string | null;
+  sessionName: string | null;
 };
 
 export type HomeData = {
@@ -47,28 +64,23 @@ export type HomeData = {
   warmupMinutes: number | null;
   warmupDescription: string | null;
   session: HomeSession | null;
+  weekOverview: HomeWeekDay[];
 };
 
 type Props = {
   home: HomeData;
 };
 
-function formatDuration(seconds: number): string {
-  if (seconds === 0) return "—";
-  const minutes = Math.floor(seconds / 60);
-  if (minutes === 0) {
-    const s = seconds % 60;
-    return `${s}s`;
-  }
-  if (minutes < 60) return `${minutes} min`;
-  const hours = Math.floor(minutes / 60);
-  const remMin = minutes % 60;
-  return `${hours}h${remMin > 0 ? ` ${remMin}min` : ""}`;
-}
-
 export default function HomeClient({ home }: Props) {
-  const { dayName, dateHuman, isRestDay, warmupMinutes, warmupDescription, session } =
-    home;
+  const {
+    dayName,
+    dateHuman,
+    isRestDay,
+    warmupMinutes,
+    warmupDescription,
+    session,
+    weekOverview,
+  } = home;
 
   const dayNameFr = DAY_LABELS_FR[dayName];
 
@@ -77,306 +89,283 @@ export default function HomeClient({ home }: Props) {
       ? `${warmupMinutes} min · ${warmupDescription}`
       : undefined;
 
-  const [monthStats, setMonthStats] = useState<Stats>({
-    sessionsDone: 0,
-    totalSets: 0,
-    totalDurationSeconds: 0,
-  });
+  const [doneToday, setDoneToday] = useState(false);
+  const [doneThisWeekIds, setDoneThisWeekIds] = useState<string[]>([]);
 
-  const [yearStats, setYearStats] = useState<Stats>({
-    sessionsDone: 0,
-    totalSets: 0,
-    totalDurationSeconds: 0,
-  });
-
-    useEffect(() => {
-    // 1) d'abord les stats locales (instantané)
-    const m = getMonthStats();
-    const y = getYearStats();
-    setMonthStats(m);
-    setYearStats(y);
-
-    // 2) puis on synchronise avec la BDD
-    void (async () => {
-      try {
-        const res = await fetch("/api/stats/summary");
-        if (!res.ok) return;
-        const data = await res.json();
-
-        if (data.month) {
-          setMonthStats({
-            sessionsDone: data.month.sessionsDone ?? 0,
-            totalSets: data.month.totalSets ?? 0,
-            totalDurationSeconds:
-              data.month.totalDurationSeconds ?? 0,
-          });
-        }
-
-        if (data.year) {
-          setYearStats({
-            sessionsDone: data.year.sessionsDone ?? 0,
-            totalSets: data.year.totalSets ?? 0,
-            totalDurationSeconds:
-              data.year.totalDurationSeconds ?? 0,
-          });
-        }
-      } catch (e) {
-        console.error("[Home] Erreur stats DB:", e);
-      }
-    })();
-  }, []);
-
-
-  const today = new Date();
-  const monthName = today.toLocaleDateString("fr-FR", {
-    month: "long",
-    year: "numeric",
-  });
-  const yearLabel = today.getFullYear();
-
-  const motivationMessage =
-    monthStats.sessionsDone === 0
-      ? "Commence ton premier entraînement du mois 💪"
-      : monthStats.sessionsDone < 8
-      ? "Tu es en train de construire une vraie habitude, continue."
-      : "Tu es régulier, ton toi du futur te dira merci.";
-
-  function formatItemLabel(item: HomeSessionItemPreview, type: HomeSession["type"]) {
-    let base: string;
-    if (item.repsType === "reps") {
-      if (item.repsText) {
-        base = item.repsText;
-      } else if (item.repsValue != null) {
-        base = `${item.repsValue} reps`;
-      } else {
-        base = "reps";
-      }
+  // Lecture de l'historique local (localStorage)
+  useEffect(() => {
+    if (session) {
+      setDoneToday(getSessionDoneToday(session.id));
     } else {
-      base = item.repsValue != null ? `${item.repsValue}s` : "temps";
+      setDoneToday(false);
     }
+    setDoneThisWeekIds(getSessionsDoneThisWeek());
+  }, [session?.id]);
 
-    if (type === "classic" && item.sets && item.sets > 0) {
-      return `${item.sets} séries · ${base}`;
-    }
+  const orderedWeek = useMemo(() => {
+    const order: DayName[] = [
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+      "sunday",
+    ];
+    const byDay = new Map<DayName, HomeWeekDay>();
+    weekOverview.forEach((d) => byDay.set(d.day, d));
+    return order.map(
+      (d) =>
+        byDay.get(d) ?? {
+          day: d,
+          hasSession: false,
+          isRest: true,
+          sessionId: null,
+          sessionSlug: null,
+          sessionName: null,
+        }
+    );
+  }, [weekOverview]);
 
-    return base;
+  const plannedTrainingDays = orderedWeek.filter(
+    (d) => d.hasSession && !d.isRest
+  ).length;
+
+  const doneThisWeekCount = orderedWeek.filter(
+    (d) => d.sessionId && doneThisWeekIds.includes(d.sessionId)
+  ).length;
+
+  const todayWeekEntry = orderedWeek.find((d) => d.day === dayName);
+  const todayHasSession = !!todayWeekEntry?.hasSession && !!session;
+  const todayIsRest = isRestDay || !todayHasSession;
+
+  let mainCtaLabel = "Lancer la séance";
+  let mainCtaVariant: "primary" | "outline" = "primary";
+  let mainCtaHref = session ? `/sessions/${session.slug}` : "/planning";
+
+  if (todayIsRest) {
+    mainCtaLabel = "Voir le planning de la semaine";
+    mainCtaVariant = "outline";
+    mainCtaHref = "/planning";
+  } else if (doneToday) {
+    mainCtaLabel = "Refaire la séance";
   }
+
+  const weekSummaryText =
+    plannedTrainingDays > 0
+      ? `${doneThisWeekCount} / ${plannedTrainingDays} séance${
+          plannedTrainingDays > 1 ? "s" : ""
+        } prévues complétées cette semaine`
+      : doneThisWeekCount > 0
+      ? `${doneThisWeekCount} séance${
+          doneThisWeekCount > 1 ? "s" : ""
+        } faite${
+          doneThisWeekCount > 1 ? "s" : ""
+        } cette semaine`
+      : "Tu démarres une nouvelle semaine 💪";
 
   return (
     <main className="px-4 pb-4 space-y-5">
-      {/* HEADER APP */}
-      <header className="pt-3">
-        <div className="flex items-center justify-between">
+      {/* HEADER */}
+      <header className="pt-3 space-y-2">
+        <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
+          Calyfit
+        </p>
+        <div className="flex items-baseline justify-between gap-3">
           <div>
-            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
-              Calyfit
-            </p>
-            <h1 className="mt-1 text-2xl font-semibold text-slate-50">
+            <h1 className="text-2xl font-semibold text-slate-50">
               {dayNameFr}
             </h1>
             <p className="text-xs text-slate-400">{dateHuman}</p>
           </div>
-          <div className="flex flex-col items-end text-right">
-            <span className="rounded-full bg-sky-500/15 px-3 py-1 text-[11px] font-medium text-sky-300 border border-sky-500/30">
-              Calisthénie · Outdoor
+          <div className="text-right">
+            <span className="inline-flex items-center rounded-full border border-sky-500/40 bg-sky-500/10 px-3 py-1 text-[11px] font-medium text-sky-200">
+              Street workout · Outdoor
             </span>
-            {monthStats.sessionsDone > 0 && (
+            {plannedTrainingDays > 0 && (
               <p className="mt-1 text-[11px] text-slate-500">
-                {monthStats.sessionsDone} séance
-                {monthStats.sessionsDone > 1 ? "s" : ""} ce mois-ci
+                {weekSummaryText}
               </p>
             )}
           </div>
         </div>
       </header>
 
-      {/* SÉANCE DU JOUR */}
+      {/* BLOC PRINCIPAL : SÉANCE DU JOUR */}
       <section>
-        <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-950 px-4 py-4 shadow-sm">
-          <div className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-sky-500/15 blur-3xl" />
-          <div className="flex items-start justify-between gap-3">
-            <div className="relative z-10 flex-1">
-              <p className="text-[11px] font-medium uppercase tracking-wide text-sky-400">
-                {isRestDay ? "Jour de repos" : "Séance du jour"}
-              </p>
+        <div className="relative overflow-hidden rounded-3xl border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-950 px-4 py-4 shadow-[0_18px_40px_rgba(0,0,0,0.65)]">
+          {/* halo de couleur */}
+          <div className="pointer-events-none absolute -right-10 -top-8 h-40 w-40 rounded-full bg-sky-500/20 blur-3xl" />
 
-              {isRestDay ? (
-                <>
-                  <p className="mt-1 text-lg font-semibold text-slate-50">
-                    Récupération active 😌
-                  </p>
-                  <p className="mt-1 text-sm text-slate-300">
-                    Mobilité légère, respiration, marche tranquille. Laisse ton
-                    corps assimiler le travail.
-                  </p>
-                </>
-              ) : session ? (
-                <>
-                  <p className="mt-1 text-lg font-semibold text-slate-50">
-                    {session.name}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-400">
-                    {session.type === "circuit" ? "Circuit" : "Séance classique"}
-                    {session.estimatedDurationMinutes &&
-                      ` · ~${session.estimatedDurationMinutes} min`}
-                  </p>
-                  {warmupText && (
-                    <p className="mt-2 text-[11px] text-slate-400">
-                      Échauffement : {warmupText}
+          <div className="relative z-10 space-y-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 space-y-1">
+                <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-sky-400">
+                  {todayIsRest
+                    ? "Aujourd'hui : repos"
+                    : doneToday
+                    ? "Séance du jour · déjà faite ✅"
+                    : "Séance du jour"}
+                </p>
+
+                {todayIsRest ? (
+                  <>
+                    <p className="text-lg font-semibold text-slate-50">
+                      Récupération active 😌
                     </p>
+                    <p className="text-sm text-slate-300">
+                      Marche, mobilité, respiration. Laisse ton corps assimiler
+                      le travail de la semaine.
+                    </p>
+                  </>
+                ) : session ? (
+                  <>
+                    <p className="text-lg font-semibold text-slate-50">
+                      {session.name}
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      {session.type === "circuit" ? "Circuit" : "Séance classique"}
+                      {session.estimatedDurationMinutes &&
+                        ` · ~${session.estimatedDurationMinutes} min`}
+                    </p>
+                    {warmupText && (
+                      <p className="text-[11px] text-slate-400">
+                        Échauffement : {warmupText}
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <p className="text-lg font-semibold text-slate-50">
+                      Pas de séance prévue
+                    </p>
+                    <p className="text-sm text-slate-300">
+                      Tu peux ajouter une séance pour aujourd&apos;hui dans ton
+                      planning.
+                    </p>
+                  </>
+                )}
+              </div>
+
+              {!todayIsRest && session && (
+                <div className="flex flex-col items-end text-right">
+                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-sky-500/20 text-xl">
+                    💪
+                  </span>
+                  {doneToday && (
+                    <span className="mt-2 rounded-full bg-emerald-500/15 px-2 py-[2px] text-[10px] font-medium text-emerald-200 border border-emerald-500/40">
+                      Fait aujourd&apos;hui
+                    </span>
                   )}
-                </>
-              ) : (
-                <>
-                  <p className="mt-1 text-lg font-semibold text-slate-50">
-                    Pas de séance prévue
-                  </p>
-                  <p className="mt-1 text-sm text-slate-300">
-                    Tu peux ajouter une séance dans le planning pour cette journée.
-                  </p>
-                </>
+                </div>
               )}
             </div>
 
-            {!isRestDay && session && (
-              <div className="relative z-10 flex flex-col items-end text-right">
-                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-sky-500/20 text-lg">
-                  💪
-                </span>
-              </div>
-            )}
+            {/* CTA principal */}
+            <Link
+              href={mainCtaHref}
+              className={
+                "mt-1 inline-flex w-full items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold transition active:scale-[0.98] " +
+                (mainCtaVariant === "primary"
+                  ? "bg-sky-500 text-white shadow-sm hover:bg-sky-400"
+                  : "border border-slate-700 bg-slate-900/80 text-slate-100 hover:bg-slate-800")
+              }
+            >
+              {mainCtaLabel}
+            </Link>
           </div>
-
-          {!isRestDay && session && (
-            <Link
-              href={`/sessions/${session.slug}`}
-              className="relative z-10 mt-4 inline-flex w-full items-center justify-center rounded-xl bg-sky-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-400 active:scale-[0.99] transition"
-            >
-              Lancer la séance
-            </Link>
-          )}
-
-          {isRestDay && (
-            <Link
-              href="/planning"
-              className="relative z-10 mt-4 inline-flex w-full items-center justify-center rounded-xl border border-slate-700 bg-slate-900/70 px-4 py-2 text-xs font-medium text-slate-100 hover:bg-slate-800 active:scale-[0.99] transition"
-            >
-              Voir le planning de la semaine
-            </Link>
-          )}
         </div>
       </section>
 
-      {/* BLOC STATS GLOBAL (MOIS & ANNÉE) */}
-      <section className="space-y-3">
+      {/* PROGRESSION DE LA SEMAINE */}
+      <section className="space-y-2">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-slate-100">
-            Progression
+            Ta semaine
           </h2>
-          <p className="text-[11px] text-slate-500">{motivationMessage}</p>
+          <Link
+            href="/planning"
+            className="text-[11px] text-sky-400 underline underline-offset-2"
+          >
+            Voir le planning
+          </Link>
         </div>
 
-        {/* Carte mois */}
-        <div className="rounded-2xl border border-slate-800 bg-slate-950/90 p-3">
-          <div className="flex items-center justify-between">
-            <p className="text-[11px] uppercase tracking-wide text-slate-400">
-              Ce mois-ci
-            </p>
-            <p className="text-[11px] text-slate-500">{monthName}</p>
-          </div>
-          <div className="mt-2 grid grid-cols-3 gap-2 text-center">
-            <div className="rounded-xl bg-slate-900/80 px-2 py-2">
-              <p className="text-[11px] text-slate-400">Séances</p>
-              <p className="mt-0.5 text-lg font-semibold text-slate-50">
-                {monthStats.sessionsDone}
-              </p>
-            </div>
-            <div className="rounded-xl bg-slate-900/80 px-2 py-2">
-              <p className="text-[11px] text-slate-400">Séries / blocs</p>
-              <p className="mt-0.5 text-lg font-semibold text-slate-50">
-                {monthStats.totalSets}
-              </p>
-            </div>
-            <div className="rounded-xl bg-slate-900/80 px-2 py-2">
-              <p className="text-[11px] text-slate-400">Temps actif</p>
-              <p className="mt-0.5 text-xs font-semibold text-slate-50">
-                {formatDuration(monthStats.totalDurationSeconds)}
-              </p>
-            </div>
-          </div>
+        <div className="grid grid-cols-7 gap-1.5 text-center">
+          {orderedWeek.map((d) => {
+            const isTodayDay = d.day === dayName;
+            const isRest = d.isRest || !d.hasSession;
+            const isDone =
+              !!d.sessionId && doneThisWeekIds.includes(d.sessionId);
+
+            let classes =
+              "flex flex-col items-center justify-center rounded-xl border px-1.5 py-1.5 text-[10px] transition-colors";
+            let dotClasses = "mt-1 h-1.5 w-1.5 rounded-full";
+            let labelClasses = "";
+
+            if (isRest) {
+              classes += " border-slate-800 bg-slate-950/80 text-slate-500";
+              dotClasses += " bg-slate-700/60";
+            } else if (isDone) {
+              classes +=
+                " border-emerald-500/60 bg-emerald-950/40 text-emerald-100";
+              dotClasses += " bg-emerald-400";
+            } else if (isTodayDay) {
+              classes +=
+                " border-sky-500/60 bg-sky-950/40 text-sky-100 shadow-[0_0_0_1px_rgba(56,189,248,0.5)]";
+              dotClasses += " bg-sky-400";
+            } else {
+              classes +=
+                " border-slate-800 bg-slate-950/80 text-slate-200";
+              dotClasses += " bg-slate-500";
+            }
+
+            if (isTodayDay) {
+              labelClasses = "font-semibold";
+            }
+
+            return (
+              <div key={d.day} className={classes}>
+                <span className={labelClasses}>
+                  {DAY_LABELS_SHORT_FR[d.day]}
+                </span>
+                <span className={dotClasses} />
+              </div>
+            );
+          })}
         </div>
 
-        {/* Bande année */}
-        <div className="flex items-center justify-between rounded-2xl border border-slate-850 bg-slate-950/80 px-3 py-2">
-          <div>
-            <p className="text-[11px] uppercase tracking-wide text-slate-500">
-              Cette année · {yearLabel}
-            </p>
-            <p className="mt-0.5 text-xs text-slate-400">
-              {yearStats.sessionsDone} séance
-              {yearStats.sessionsDone > 1 ? "s" : ""} complétée
-              {yearStats.sessionsDone > 1 ? "s" : ""} ·{" "}
-              {formatDuration(yearStats.totalDurationSeconds)} d&apos;effort
-            </p>
-          </div>
-          <span className="text-lg">📈</span>
-        </div>
+        <p className="text-[11px] text-slate-400">{weekSummaryText}</p>
       </section>
 
-      {/* FOCUS DU JOUR / APERÇU EXOS */}
-      {session && !isRestDay && session.itemsPreview.length > 0 && (
-        <section className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-100">
-              Focus de la séance
-            </h2>
-            <Link
-              href={`/sessions/${session.slug}`}
-              className="text-[11px] text-sky-400 underline underline-offset-2"
-            >
-              Voir le détail
-            </Link>
-          </div>
-
-          <ul className="space-y-2">
-            {session.itemsPreview.slice(0, 3).map((item) => (
-              <li
-                key={item.id}
-                className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-950/80 px-3 py-2"
-              >
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-slate-50">
-                    {item.exerciseName}
-                  </p>
-                  <p className="mt-0.5 text-[11px] text-slate-400">
-                    {formatItemLabel(item, session.type)}
-                  </p>
-                </div>
-                <div className="ml-2 text-right">
-                  <p className="text-[10px] text-slate-500">
-                    Repos{" "}
-                    {item.restSeconds
-                      ? `${Math.round(item.restSeconds / 60)} min`
-                      : "—"}
-                  </p>
-                  <p className="mt-0.5 text-[10px] text-slate-500">
-                    Exo {item.order}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {/* LIEN PLANNING */}
-      <section>
-        <Link
-          href="/planning"
-          className="block rounded-2xl border border-slate-800 bg-slate-950/80 px-3 py-3 text-xs text-slate-300 hover:bg-slate-900 transition"
-        >
-          Voir le planning de la semaine →
-        </Link>
+      {/* ACCÈS RAPIDE */}
+      <section className="space-y-2">
+        <h2 className="text-sm font-semibold text-slate-100">
+          Accès rapide
+        </h2>
+        <div className="grid grid-cols-3 gap-2">
+          <Link
+            href="/sessions"
+            className="flex flex-col items-center justify-center rounded-2xl border border-slate-800 bg-slate-950/90 px-2 py-2 text-[11px] text-slate-200 hover:bg-slate-900"
+          >
+            <span className="text-lg">🏋️‍♂️</span>
+            <span>Séances</span>
+          </Link>
+          <Link
+            href="/planning"
+            className="flex flex-col items-center justify-center rounded-2xl border border-slate-800 bg-slate-950/90 px-2 py-2 text-[11px] text-slate-200 hover:bg-slate-900"
+          >
+            <span className="text-lg">📅</span>
+            <span>Planning</span>
+          </Link>
+          <Link
+            href="/profile"
+            className="flex flex-col items-center justify-center rounded-2xl border border-slate-800 bg-slate-950/90 px-2 py-2 text-[11px] text-slate-200 hover:bg-slate-900"
+          >
+            <span className="text-lg">👤</span>
+            <span>Profil</span>
+          </Link>
+        </div>
       </section>
     </main>
   );

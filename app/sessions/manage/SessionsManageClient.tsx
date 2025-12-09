@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowUp, ArrowDown, X } from "lucide-react";
 
 type SessionOption = {
   id: string;
@@ -31,6 +32,9 @@ type ExerciseGroups = Record<string, ExerciseOption[]>;
 type SessionDetailResponse = {
   id: string;
   name: string;
+  type: string;
+  rounds?: number | null;
+  estimatedDurationMinutes: number | null;
   items: {
     exerciseId: string;
     exerciseName: string;
@@ -186,7 +190,25 @@ export default function SessionsManageClient() {
   }
 
   function handleRemoveItem(index: number) {
+    const exName = items[index]?.exerciseName ?? "cet exercice";
+    const confirmDelete = window.confirm(
+      `Tu es sûr de vouloir supprimer ${exName} de cette séance ?`
+    );
+    if (!confirmDelete) return;
+
     setItems((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function moveItem(index: number, direction: -1 | 1) {
+    const newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= items.length) return;
+
+    setItems((prev) => {
+      const copy = [...prev];
+      const [removed] = copy.splice(index, 1);
+      copy.splice(newIndex, 0, removed);
+      return copy;
+    });
   }
 
   async function handleSave() {
@@ -202,11 +224,12 @@ export default function SessionsManageClient() {
       const payload = {
         sessionId: selectedSessionId,
         name: sessionName,
-        items: items.map((it) => ({
+        items: items.map((it, order) => ({
           exerciseId: it.exerciseId,
           sets: it.sets,
           reps: it.reps,
           restSeconds: it.restSeconds,
+          order,
         })),
       };
 
@@ -275,12 +298,14 @@ export default function SessionsManageClient() {
           Personnalise tes séances
         </h1>
         <p className="text-xs text-slate-400">
-          Adapte les exercices, séries et repos à ton niveau et à ta façon de
-          t&apos;entraîner.
+          Adapte les exercices, séries et repos à ton niveau. Tu peux aussi
+          changer l&apos;ordre des exercices pour coller à ta routine.
         </p>
       </header>
 
-      {errorMsg && <p className="text-[11px] text-red-300">{errorMsg}</p>}
+      {errorMsg && (
+        <p className="text-[11px] text-red-300">{errorMsg}</p>
+      )}
 
       {/* Séance à personnaliser */}
       <section className="rounded-3xl border border-slate-800 bg-slate-950/90 px-3 py-3 space-y-2">
@@ -348,142 +373,155 @@ export default function SessionsManageClient() {
         )}
 
         <div className="space-y-2">
-          {items.map((it, index) => (
-            <div
-              key={index}
-              className="rounded-2xl border border-slate-800 bg-slate-900/80 px-3 py-2 space-y-1"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <p className="text-[12px] font-medium text-slate-100">
-                    {it.exerciseName}
-                  </p>
-                  <p className="text-[10px] text-slate-500">
-                    {it.muscleGroup}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const ok = window.confirm(
-                      "Tu es sûr de vouloir supprimer cet exercice de la séance ?"
-                    );
-                    if (!ok) return;
-                    handleRemoveItem(index);
-                  }}
-                  className="
-                    flex h-7 w-7 items-center justify-center
-                    rounded-full border border-red-500/60
-                    bg-red-500/10 text-[12px] font-bold
-                    text-red-300 hover:bg-red-500/20
-                    active:scale-95 transition
-                  "
-                  aria-label="Supprimer cet exercice"
-                >
-                  ✕
-                </button>
-              </div>
+          {items.map((it, index) => {
+            const isFirst = index === 0;
+            const isLast = index === items.length - 1;
 
-              <div className="flex items-center gap-2 text-[11px]">
-                <div className="flex flex-1 flex-col">
-                  <span className="text-[10px] text-slate-500">Séries</span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={20}
-                    value={it.sets}
-                    onChange={(e) =>
-                      handleChangeItem(index, {
-                        sets: Number(e.target.value) || 1,
-                      })
-                    }
-                    className="w-full rounded-xl border border-slate-700 bg-slate-950 px-2 py-1 text-[11px] text-slate-100"
-                  />
+            return (
+              <div
+                key={index}
+                className="rounded-2xl border border-slate-800 bg-slate-900/80 px-3 py-2.5 space-y-2"
+              >
+                {/* Ligne titre + boutons ordre/suppression */}
+                <div className="flex items-center gap-3">
+                  {/* colonne up/down */}
+                  <div className="flex flex-col items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => moveItem(index, -1)}
+                      disabled={isFirst}
+                      className={
+                        "inline-flex h-7 w-7 items-center justify-center rounded-full text-[10px] " +
+                        (isFirst
+                          ? "text-slate-600 opacity-40"
+                          : "text-slate-100 bg-slate-800 hover:bg-slate-700")
+                      }
+                      aria-label="Monter cet exercice"
+                    >
+                      <ArrowUp className="h-3 w-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => moveItem(index, 1)}
+                      disabled={isLast}
+                      className={
+                        "inline-flex h-7 w-7 items-center justify-center rounded-full text-[10px] " +
+                        (isLast
+                          ? "text-slate-600 opacity-40"
+                          : "text-slate-100 bg-slate-800 hover:bg-slate-700")
+                      }
+                      aria-label="Descendre cet exercice"
+                    >
+                      <ArrowDown className="h-3 w-3" />
+                    </button>
+                  </div>
+
+                  {/* titre */}
+                  <div className="flex-1">
+                    <p className="text-[12px] font-semibold text-slate-100">
+                      {index + 1}. {it.exerciseName}
+                    </p>
+                    <p className="text-[10px] text-slate-500">
+                      {it.muscleGroup}
+                    </p>
+                  </div>
+
+                  {/* suppression */}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveItem(index)}
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-red-500/10 text-[10px] text-red-300 hover:bg-red-500/20"
+                    aria-label="Supprimer cet exercice"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
                 </div>
-                <div className="flex flex-1 flex-col">
-                  <span className="text-[10px] text-slate-500">Reps</span>
-                  <input
-                    type="text"
-                    value={it.reps}
-                    onChange={(e) =>
-                      handleChangeItem(index, { reps: e.target.value })
-                    }
-                    className="w-full rounded-xl border border-slate-700 bg-slate-950 px-2 py-1 text-[11px] text-slate-100"
-                    placeholder="8-12"
-                  />
-                </div>
-                <div className="flex flex-1 flex-col">
-                  <span className="text-[10px] text-slate-500">
-                    Repos (sec)
-                  </span>
-                  <input
-                    type="number"
-                    min={0}
-                    max={600}
-                    value={it.restSeconds ?? ""}
-                    onChange={(e) =>
-                      handleChangeItem(index, {
-                        restSeconds:
-                          e.target.value === ""
-                            ? null
-                            : Number(e.target.value),
-                      })
-                    }
-                    className="w-full rounded-xl border border-slate-700 bg-slate-950 px-2 py-1 text-[11px] text-slate-100"
-                    placeholder="90"
-                  />
+
+                {/* Ligne inputs en grid, bien alignée */}
+                <div className="grid grid-cols-3 gap-2 text-[11px]">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-slate-500">Séries</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={20}
+                      value={it.sets}
+                      onChange={(e) =>
+                        handleChangeItem(index, {
+                          sets: Number(e.target.value) || 1,
+                        })
+                      }
+                      className="w-full rounded-xl border border-slate-700 bg-slate-950 px-2 py-1 text-[11px] text-slate-100"
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-slate-500">Reps</span>
+                    <input
+                      type="text"
+                      value={it.reps}
+                      onChange={(e) =>
+                        handleChangeItem(index, { reps: e.target.value })
+                      }
+                      className="w-full rounded-xl border border-slate-700 bg-slate-950 px-2 py-1 text-[11px] text-slate-100"
+                      placeholder="8-12"
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-slate-500">
+                      Repos (sec)
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={600}
+                      value={it.restSeconds ?? ""}
+                      onChange={(e) =>
+                        handleChangeItem(index, {
+                          restSeconds:
+                            e.target.value === ""
+                              ? null
+                              : Number(e.target.value),
+                        })
+                      }
+                      className="w-full rounded-xl border border-slate-700 bg-slate-950 px-2 py-1 text-[11px] text-slate-100"
+                      placeholder="90"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 
-            {/* Bibliothèque d'exercices par muscle */}
+      {/* Bibliothèque d'exercices par muscle */}
       <section className="rounded-3xl border border-slate-800 bg-slate-950/90 px-3 py-3 space-y-3">
         <p className="text-[11px] text-slate-400 uppercase tracking-[0.14em]">
           Ajouter un exercice
         </p>
-
-        {/* Onglets de muscles */}
         {muscleTabs.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {muscleTabs.map((mg) => {
               const active = mg === activeMuscleGroup;
-
-              // petit emoji en fonction du groupe
-              let emoji = "🏋️‍♂️";
-              if (mg === "Dos") emoji = "🦴";
-              else if (mg === "Pecs") emoji = "💪";
-              else if (mg === "Épaules") emoji = "🏹";
-              else if (mg === "Biceps") emoji = "🦾";
-              else if (mg === "Triceps") emoji = "🔱";
-              else if (mg === "Jambes") emoji = "🦵";
-              else if (mg === "Abdos / Core") emoji = "🧱";
-              else if (mg === "Full body") emoji = "🔥";
-              else if (mg === "Autres") emoji = "✨";
-
               return (
                 <button
                   key={mg}
                   type="button"
                   onClick={() => setActiveMuscleGroup(mg)}
                   className={
-                    "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] transition " +
+                    "rounded-full border px-3 py-1.5 text-[11px] transition " +
                     (active
                       ? "border-emerald-500 bg-emerald-500/15 text-emerald-100"
                       : "border-slate-700 bg-slate-900/80 text-slate-300")
                   }
                 >
-                  <span>{emoji}</span>
-                  <span>{mg}</span>
+                  {mg}
                 </button>
               );
             })}
           </div>
         )}
 
-        {/* Liste des exos du groupe sélectionné */}
         {activeMuscleGroup && (
           <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
             {(exerciseGroups[activeMuscleGroup] ?? []).map((ex) => (
@@ -502,7 +540,6 @@ export default function SessionsManageClient() {
           </div>
         )}
       </section>
-
 
       {/* Bouton sauvegarde */}
       <button

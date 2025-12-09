@@ -5,6 +5,7 @@ import type { DayName } from "@/lib/types";
 import HomeClient, {
   HomeData,
   HomeSessionItemPreview,
+  HomeWeekDay,
 } from "./HomeClient";
 
 function getTodayDayName(): DayName {
@@ -21,15 +22,24 @@ function getTodayDayName(): DayName {
   return map[jsDay]!;
 }
 
+const DAY_ORDER: DayName[] = [
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
+];
+
 export default async function HomePage() {
   // 🔐 Récupérer l'utilisateur connecté via le cookie
   const user = await getCurrentUser();
   if (!user) {
-    // Pas connecté → direction /login
     redirect("/login");
   }
 
-   const userId = user.id;
+  const userId = user.id;
 
   const today = new Date();
   const dayName = getTodayDayName();
@@ -38,12 +48,11 @@ export default async function HomePage() {
     month: "long",
   });
 
-  // 🔥 d’abord on cherche un plan actif
+  // 🔥 On cherche d'abord un plan actif, avec TOUS les jours
   let dbWeekPlan = await prisma.weekPlan.findFirst({
     where: { userId, isActive: true },
     include: {
       days: {
-        where: { day: dayName },
         include: {
           session: {
             include: {
@@ -59,13 +68,12 @@ export default async function HomePage() {
     },
   });
 
-  // fallback si aucun plan actif (ancien comptes)
+  // fallback si aucun plan actif (anciens comptes)
   if (!dbWeekPlan) {
     dbWeekPlan = await prisma.weekPlan.findFirst({
       where: { userId },
       include: {
         days: {
-          where: { day: dayName },
           include: {
             session: {
               include: {
@@ -83,11 +91,14 @@ export default async function HomePage() {
     }
   }
 
-  const day = dbWeekPlan?.days[0] ?? null;
-  const session = day?.session ?? null;
+  const allDays = dbWeekPlan.days;
 
+  // Jour courant dans ce planning
+  const todayDay = allDays.find((d) => d.day === dayName) ?? null;
+  const session = todayDay?.session ?? null;
+
+  // Préview des exos du jour (pour le futur si besoin)
   let itemsPreview: HomeSessionItemPreview[] = [];
-
   if (session) {
     const itemsSorted = [...session.items].sort((a, b) => a.order - b.order);
     itemsPreview = itemsSorted.map((item) => ({
@@ -102,16 +113,34 @@ export default async function HomePage() {
     }));
   }
 
-  const isRestDay = !session || day?.isRest || false;
+  // Vue d’ensemble de la semaine pour la home
+  const weekOverview: HomeWeekDay[] = DAY_ORDER.map((dName) => {
+    const rec = allDays.find((d) => d.day === dName);
+    const sess = rec?.session ?? null;
+    const hasSession = !!sess;
+    const isRest = rec?.isRest ?? !hasSession;
+
+    return {
+      day: dName,
+      hasSession,
+      isRest,
+      sessionId: sess?.id ?? null,
+      sessionSlug: sess?.slug ?? null,
+      sessionName: sess?.name ?? null,
+    };
+  });
+
+  const isRestDay = !session || todayDay?.isRest || false;
 
   const homeData: HomeData = {
     dayName,
     dateHuman,
     isRestDay,
-    warmupMinutes: day?.warmupMinutes ?? null,
-    warmupDescription: day?.warmupDescription ?? null,
+    warmupMinutes: todayDay?.warmupMinutes ?? null,
+    warmupDescription: todayDay?.warmupDescription ?? null,
     session: session
       ? {
+          id: session.id,
           slug: session.slug,
           name: session.name,
           type: session.type as "classic" | "circuit",
@@ -119,6 +148,7 @@ export default async function HomePage() {
           itemsPreview,
         }
       : null,
+    weekOverview,
   };
 
   return <HomeClient home={homeData} />;
