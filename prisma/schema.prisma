@@ -1,0 +1,130 @@
+generator client {
+  provider = "prisma-client"
+  // le client sera généré dans /generated/prisma
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  // URL dans prisma.config.ts via env("DATABASE_URL")
+}
+
+/// Un utilisateur de l'application.
+/// Pour l'instant il n'y aura que toi (Paul),
+/// mais ce modèle permet d'en gérer plusieurs plus tard.
+model User {
+  id    String  @id @default(cuid())
+  email String  @unique
+  name  String?
+
+  // 🔐 Auth
+  passwordHash  String    @default("") // on met une string vide pour l'instant
+  emailVerified DateTime?
+
+  // 🔎 tracking
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  // relations existantes
+  weekPlans WeekPlan[]
+  history   SessionHistory[]
+}
+
+model Exercise {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String?  @unique   // <- optionnel, donc migrable même avec des lignes existantes
+  muscleGroup String?           // ex: "Dos", "Pecs", "Jambes", etc.
+
+  sessionExercises SessionExercise[]
+}
+
+
+
+/// Une séance (dos, jambes, circuit pec/triceps, etc.)
+model Session {
+  id                          String @id @default(cuid())
+  slug                        String @unique
+  name                        String
+  type                        String // "classic" | "circuit"
+  estimatedDurationMinutes    Int?
+  rounds                      Int? // pour les circuits
+  restBetweenExercisesSeconds Int? // repos entre exos (circuit)
+  restBetweenRoundsSeconds    Int? // repos entre tours (circuit)
+
+  items   SessionExercise[]
+  days    WeekDay[]
+  history SessionHistory[]
+}
+
+/// Un exercice à l'intérieur d'une séance
+model SessionExercise {
+  id         String @id @default(cuid())
+  sessionId  String
+  exerciseId String
+
+  order Int
+
+  // Pour les "séances classiques"
+  sets Int? // nombre de séries (si applicable)
+
+  // Représentation des répétitions :
+  repsType  String // "reps" | "time"
+  repsValue Int? // ex: 8 (reps) ou 30 (secondes)
+  repsText  String? // cas particuliers type "max", "5-8", etc.
+
+  restSeconds Int? // repos après cet exo / cette série
+  note        String?
+
+  session  Session  @relation(fields: [sessionId], references: [id])
+  exercise Exercise @relation(fields: [exerciseId], references: [id])
+}
+
+/// Un planning type pour une semaine
+model WeekPlan {
+  id   String @id @default(cuid())
+  name String
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  days WeekDay[]
+
+  // 🔥 nouveaux champs
+  isActive     Boolean @default(true)
+  templateType String? // "beginner" | "intermediate" | "advanced" | "custom"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+/// Un jour dans le planning
+model WeekDay {
+  id         String @id @default(cuid())
+  weekPlanId String
+  day        String // "monday" | "tuesday" | "wednesday"...
+
+  isRest            Boolean @default(false)
+  warmupMinutes     Int?
+  warmupDescription String?
+
+  sessionId String?
+  session   Session? @relation(fields: [sessionId], references: [id])
+
+  weekPlan WeekPlan @relation(fields: [weekPlanId], references: [id])
+}
+
+/// Historique des séances effectuées
+model SessionHistory {
+  id                 String   @id @default(cuid())
+  sessionId          String
+  finishedAt         DateTime // timestamp de fin
+  durationSeconds    Int // durée totale
+  totalCompletedSets Int // nb de séries/blocs validés
+
+  // 🔗 appartenance à un utilisateur
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  session Session @relation(fields: [sessionId], references: [id])
+}
