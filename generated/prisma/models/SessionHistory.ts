@@ -288,7 +288,7 @@ export type SessionHistoryCreateInput = {
   finishedAt: Date | string
   durationSeconds: number
   totalCompletedSets: number
-  user: Prisma.UserCreateNestedOneWithoutHistoryInput
+  user: Prisma.UserCreateNestedOneWithoutSessionHistoryInput
   session: Prisma.SessionCreateNestedOneWithoutHistoryInput
 }
 
@@ -306,7 +306,7 @@ export type SessionHistoryUpdateInput = {
   finishedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   durationSeconds?: Prisma.IntFieldUpdateOperationsInput | number
   totalCompletedSets?: Prisma.IntFieldUpdateOperationsInput | number
-  user?: Prisma.UserUpdateOneRequiredWithoutHistoryNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutSessionHistoryNestedInput
   session?: Prisma.SessionUpdateOneRequiredWithoutHistoryNestedInput
 }
 
@@ -533,7 +533,7 @@ export type SessionHistoryCreateWithoutSessionInput = {
   finishedAt: Date | string
   durationSeconds: number
   totalCompletedSets: number
-  user: Prisma.UserCreateNestedOneWithoutHistoryInput
+  user: Prisma.UserCreateNestedOneWithoutSessionHistoryInput
 }
 
 export type SessionHistoryUncheckedCreateWithoutSessionInput = {
@@ -614,7 +614,7 @@ export type SessionHistoryUpdateWithoutSessionInput = {
   finishedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   durationSeconds?: Prisma.IntFieldUpdateOperationsInput | number
   totalCompletedSets?: Prisma.IntFieldUpdateOperationsInput | number
-  user?: Prisma.UserUpdateOneRequiredWithoutHistoryNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutSessionHistoryNestedInput
 }
 
 export type SessionHistoryUncheckedUpdateWithoutSessionInput = {

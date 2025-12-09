@@ -28,98 +28,74 @@ export type AggregateSession = {
 
 export type SessionAvgAggregateOutputType = {
   estimatedDurationMinutes: number | null
-  rounds: number | null
-  restBetweenExercisesSeconds: number | null
-  restBetweenRoundsSeconds: number | null
 }
 
 export type SessionSumAggregateOutputType = {
   estimatedDurationMinutes: number | null
-  rounds: number | null
-  restBetweenExercisesSeconds: number | null
-  restBetweenRoundsSeconds: number | null
 }
 
 export type SessionMinAggregateOutputType = {
   id: string | null
+  userId: string | null
   slug: string | null
   name: string | null
   type: string | null
   estimatedDurationMinutes: number | null
-  rounds: number | null
-  restBetweenExercisesSeconds: number | null
-  restBetweenRoundsSeconds: number | null
 }
 
 export type SessionMaxAggregateOutputType = {
   id: string | null
+  userId: string | null
   slug: string | null
   name: string | null
   type: string | null
   estimatedDurationMinutes: number | null
-  rounds: number | null
-  restBetweenExercisesSeconds: number | null
-  restBetweenRoundsSeconds: number | null
 }
 
 export type SessionCountAggregateOutputType = {
   id: number
+  userId: number
   slug: number
   name: number
   type: number
   estimatedDurationMinutes: number
-  rounds: number
-  restBetweenExercisesSeconds: number
-  restBetweenRoundsSeconds: number
   _all: number
 }
 
 
 export type SessionAvgAggregateInputType = {
   estimatedDurationMinutes?: true
-  rounds?: true
-  restBetweenExercisesSeconds?: true
-  restBetweenRoundsSeconds?: true
 }
 
 export type SessionSumAggregateInputType = {
   estimatedDurationMinutes?: true
-  rounds?: true
-  restBetweenExercisesSeconds?: true
-  restBetweenRoundsSeconds?: true
 }
 
 export type SessionMinAggregateInputType = {
   id?: true
+  userId?: true
   slug?: true
   name?: true
   type?: true
   estimatedDurationMinutes?: true
-  rounds?: true
-  restBetweenExercisesSeconds?: true
-  restBetweenRoundsSeconds?: true
 }
 
 export type SessionMaxAggregateInputType = {
   id?: true
+  userId?: true
   slug?: true
   name?: true
   type?: true
   estimatedDurationMinutes?: true
-  rounds?: true
-  restBetweenExercisesSeconds?: true
-  restBetweenRoundsSeconds?: true
 }
 
 export type SessionCountAggregateInputType = {
   id?: true
+  userId?: true
   slug?: true
   name?: true
   type?: true
   estimatedDurationMinutes?: true
-  rounds?: true
-  restBetweenExercisesSeconds?: true
-  restBetweenRoundsSeconds?: true
   _all?: true
 }
 
@@ -211,13 +187,11 @@ export type SessionGroupByArgs<ExtArgs extends runtime.Types.Extensions.Internal
 
 export type SessionGroupByOutputType = {
   id: string
+  userId: string | null
   slug: string
   name: string
   type: string
   estimatedDurationMinutes: number | null
-  rounds: number | null
-  restBetweenExercisesSeconds: number | null
-  restBetweenRoundsSeconds: number | null
   _count: SessionCountAggregateOutputType | null
   _avg: SessionAvgAggregateOutputType | null
   _sum: SessionSumAggregateOutputType | null
@@ -245,58 +219,54 @@ export type SessionWhereInput = {
   OR?: Prisma.SessionWhereInput[]
   NOT?: Prisma.SessionWhereInput | Prisma.SessionWhereInput[]
   id?: Prisma.StringFilter<"Session"> | string
+  userId?: Prisma.StringNullableFilter<"Session"> | string | null
   slug?: Prisma.StringFilter<"Session"> | string
   name?: Prisma.StringFilter<"Session"> | string
   type?: Prisma.StringFilter<"Session"> | string
   estimatedDurationMinutes?: Prisma.IntNullableFilter<"Session"> | number | null
-  rounds?: Prisma.IntNullableFilter<"Session"> | number | null
-  restBetweenExercisesSeconds?: Prisma.IntNullableFilter<"Session"> | number | null
-  restBetweenRoundsSeconds?: Prisma.IntNullableFilter<"Session"> | number | null
+  user?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
   items?: Prisma.SessionExerciseListRelationFilter
-  days?: Prisma.WeekDayListRelationFilter
+  weekDays?: Prisma.WeekDayListRelationFilter
   history?: Prisma.SessionHistoryListRelationFilter
 }
 
 export type SessionOrderByWithRelationInput = {
   id?: Prisma.SortOrder
+  userId?: Prisma.SortOrderInput | Prisma.SortOrder
   slug?: Prisma.SortOrder
   name?: Prisma.SortOrder
   type?: Prisma.SortOrder
   estimatedDurationMinutes?: Prisma.SortOrderInput | Prisma.SortOrder
-  rounds?: Prisma.SortOrderInput | Prisma.SortOrder
-  restBetweenExercisesSeconds?: Prisma.SortOrderInput | Prisma.SortOrder
-  restBetweenRoundsSeconds?: Prisma.SortOrderInput | Prisma.SortOrder
+  user?: Prisma.UserOrderByWithRelationInput
   items?: Prisma.SessionExerciseOrderByRelationAggregateInput
-  days?: Prisma.WeekDayOrderByRelationAggregateInput
+  weekDays?: Prisma.WeekDayOrderByRelationAggregateInput
   history?: Prisma.SessionHistoryOrderByRelationAggregateInput
 }
 
 export type SessionWhereUniqueInput = Prisma.AtLeast<{
   id?: string
-  slug?: string
+  userId_slug?: Prisma.SessionUserIdSlugCompoundUniqueInput
   AND?: Prisma.SessionWhereInput | Prisma.SessionWhereInput[]
   OR?: Prisma.SessionWhereInput[]
   NOT?: Prisma.SessionWhereInput | Prisma.SessionWhereInput[]
+  userId?: Prisma.StringNullableFilter<"Session"> | string | null
+  slug?: Prisma.StringFilter<"Session"> | string
   name?: Prisma.StringFilter<"Session"> | string
   type?: Prisma.StringFilter<"Session"> | string
   estimatedDurationMinutes?: Prisma.IntNullableFilter<"Session"> | number | null
-  rounds?: Prisma.IntNullableFilter<"Session"> | number | null
-  restBetweenExercisesSeconds?: Prisma.IntNullableFilter<"Session"> | number | null
-  restBetweenRoundsSeconds?: Prisma.IntNullableFilter<"Session"> | number | null
+  user?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
   items?: Prisma.SessionExerciseListRelationFilter
-  days?: Prisma.WeekDayListRelationFilter
+  weekDays?: Prisma.WeekDayListRelationFilter
   history?: Prisma.SessionHistoryListRelationFilter
-}, "id" | "slug">
+}, "id" | "userId_slug">
 
 export type SessionOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
+  userId?: Prisma.SortOrderInput | Prisma.SortOrder
   slug?: Prisma.SortOrder
   name?: Prisma.SortOrder
   type?: Prisma.SortOrder
   estimatedDurationMinutes?: Prisma.SortOrderInput | Prisma.SortOrder
-  rounds?: Prisma.SortOrderInput | Prisma.SortOrder
-  restBetweenExercisesSeconds?: Prisma.SortOrderInput | Prisma.SortOrder
-  restBetweenRoundsSeconds?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.SessionCountOrderByAggregateInput
   _avg?: Prisma.SessionAvgOrderByAggregateInput
   _max?: Prisma.SessionMaxOrderByAggregateInput
@@ -309,13 +279,11 @@ export type SessionScalarWhereWithAggregatesInput = {
   OR?: Prisma.SessionScalarWhereWithAggregatesInput[]
   NOT?: Prisma.SessionScalarWhereWithAggregatesInput | Prisma.SessionScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"Session"> | string
+  userId?: Prisma.StringNullableWithAggregatesFilter<"Session"> | string | null
   slug?: Prisma.StringWithAggregatesFilter<"Session"> | string
   name?: Prisma.StringWithAggregatesFilter<"Session"> | string
   type?: Prisma.StringWithAggregatesFilter<"Session"> | string
   estimatedDurationMinutes?: Prisma.IntNullableWithAggregatesFilter<"Session"> | number | null
-  rounds?: Prisma.IntNullableWithAggregatesFilter<"Session"> | number | null
-  restBetweenExercisesSeconds?: Prisma.IntNullableWithAggregatesFilter<"Session"> | number | null
-  restBetweenRoundsSeconds?: Prisma.IntNullableWithAggregatesFilter<"Session"> | number | null
 }
 
 export type SessionCreateInput = {
@@ -324,25 +292,21 @@ export type SessionCreateInput = {
   name: string
   type: string
   estimatedDurationMinutes?: number | null
-  rounds?: number | null
-  restBetweenExercisesSeconds?: number | null
-  restBetweenRoundsSeconds?: number | null
+  user?: Prisma.UserCreateNestedOneWithoutSessionsInput
   items?: Prisma.SessionExerciseCreateNestedManyWithoutSessionInput
-  days?: Prisma.WeekDayCreateNestedManyWithoutSessionInput
+  weekDays?: Prisma.WeekDayCreateNestedManyWithoutSessionInput
   history?: Prisma.SessionHistoryCreateNestedManyWithoutSessionInput
 }
 
 export type SessionUncheckedCreateInput = {
   id?: string
+  userId?: string | null
   slug: string
   name: string
   type: string
   estimatedDurationMinutes?: number | null
-  rounds?: number | null
-  restBetweenExercisesSeconds?: number | null
-  restBetweenRoundsSeconds?: number | null
   items?: Prisma.SessionExerciseUncheckedCreateNestedManyWithoutSessionInput
-  days?: Prisma.WeekDayUncheckedCreateNestedManyWithoutSessionInput
+  weekDays?: Prisma.WeekDayUncheckedCreateNestedManyWithoutSessionInput
   history?: Prisma.SessionHistoryUncheckedCreateNestedManyWithoutSessionInput
 }
 
@@ -352,37 +316,31 @@ export type SessionUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   estimatedDurationMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  rounds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  restBetweenExercisesSeconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  restBetweenRoundsSeconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  user?: Prisma.UserUpdateOneWithoutSessionsNestedInput
   items?: Prisma.SessionExerciseUpdateManyWithoutSessionNestedInput
-  days?: Prisma.WeekDayUpdateManyWithoutSessionNestedInput
+  weekDays?: Prisma.WeekDayUpdateManyWithoutSessionNestedInput
   history?: Prisma.SessionHistoryUpdateManyWithoutSessionNestedInput
 }
 
 export type SessionUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   estimatedDurationMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  rounds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  restBetweenExercisesSeconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  restBetweenRoundsSeconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   items?: Prisma.SessionExerciseUncheckedUpdateManyWithoutSessionNestedInput
-  days?: Prisma.WeekDayUncheckedUpdateManyWithoutSessionNestedInput
+  weekDays?: Prisma.WeekDayUncheckedUpdateManyWithoutSessionNestedInput
   history?: Prisma.SessionHistoryUncheckedUpdateManyWithoutSessionNestedInput
 }
 
 export type SessionCreateManyInput = {
   id?: string
+  userId?: string | null
   slug: string
   name: string
   type: string
   estimatedDurationMinutes?: number | null
-  rounds?: number | null
-  restBetweenExercisesSeconds?: number | null
-  restBetweenRoundsSeconds?: number | null
 }
 
 export type SessionUpdateManyMutationInput = {
@@ -391,67 +349,65 @@ export type SessionUpdateManyMutationInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   estimatedDurationMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  rounds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  restBetweenExercisesSeconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  restBetweenRoundsSeconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
 }
 
 export type SessionUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   estimatedDurationMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  rounds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  restBetweenExercisesSeconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  restBetweenRoundsSeconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+}
+
+export type SessionListRelationFilter = {
+  every?: Prisma.SessionWhereInput
+  some?: Prisma.SessionWhereInput
+  none?: Prisma.SessionWhereInput
+}
+
+export type SessionOrderByRelationAggregateInput = {
+  _count?: Prisma.SortOrder
+}
+
+export type SessionUserIdSlugCompoundUniqueInput = {
+  userId: string
+  slug: string
 }
 
 export type SessionCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  userId?: Prisma.SortOrder
   slug?: Prisma.SortOrder
   name?: Prisma.SortOrder
   type?: Prisma.SortOrder
   estimatedDurationMinutes?: Prisma.SortOrder
-  rounds?: Prisma.SortOrder
-  restBetweenExercisesSeconds?: Prisma.SortOrder
-  restBetweenRoundsSeconds?: Prisma.SortOrder
 }
 
 export type SessionAvgOrderByAggregateInput = {
   estimatedDurationMinutes?: Prisma.SortOrder
-  rounds?: Prisma.SortOrder
-  restBetweenExercisesSeconds?: Prisma.SortOrder
-  restBetweenRoundsSeconds?: Prisma.SortOrder
 }
 
 export type SessionMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  userId?: Prisma.SortOrder
   slug?: Prisma.SortOrder
   name?: Prisma.SortOrder
   type?: Prisma.SortOrder
   estimatedDurationMinutes?: Prisma.SortOrder
-  rounds?: Prisma.SortOrder
-  restBetweenExercisesSeconds?: Prisma.SortOrder
-  restBetweenRoundsSeconds?: Prisma.SortOrder
 }
 
 export type SessionMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  userId?: Prisma.SortOrder
   slug?: Prisma.SortOrder
   name?: Prisma.SortOrder
   type?: Prisma.SortOrder
   estimatedDurationMinutes?: Prisma.SortOrder
-  rounds?: Prisma.SortOrder
-  restBetweenExercisesSeconds?: Prisma.SortOrder
-  restBetweenRoundsSeconds?: Prisma.SortOrder
 }
 
 export type SessionSumOrderByAggregateInput = {
   estimatedDurationMinutes?: Prisma.SortOrder
-  rounds?: Prisma.SortOrder
-  restBetweenExercisesSeconds?: Prisma.SortOrder
-  restBetweenRoundsSeconds?: Prisma.SortOrder
 }
 
 export type SessionScalarRelationFilter = {
@@ -462,6 +418,48 @@ export type SessionScalarRelationFilter = {
 export type SessionNullableScalarRelationFilter = {
   is?: Prisma.SessionWhereInput | null
   isNot?: Prisma.SessionWhereInput | null
+}
+
+export type SessionCreateNestedManyWithoutUserInput = {
+  create?: Prisma.XOR<Prisma.SessionCreateWithoutUserInput, Prisma.SessionUncheckedCreateWithoutUserInput> | Prisma.SessionCreateWithoutUserInput[] | Prisma.SessionUncheckedCreateWithoutUserInput[]
+  connectOrCreate?: Prisma.SessionCreateOrConnectWithoutUserInput | Prisma.SessionCreateOrConnectWithoutUserInput[]
+  createMany?: Prisma.SessionCreateManyUserInputEnvelope
+  connect?: Prisma.SessionWhereUniqueInput | Prisma.SessionWhereUniqueInput[]
+}
+
+export type SessionUncheckedCreateNestedManyWithoutUserInput = {
+  create?: Prisma.XOR<Prisma.SessionCreateWithoutUserInput, Prisma.SessionUncheckedCreateWithoutUserInput> | Prisma.SessionCreateWithoutUserInput[] | Prisma.SessionUncheckedCreateWithoutUserInput[]
+  connectOrCreate?: Prisma.SessionCreateOrConnectWithoutUserInput | Prisma.SessionCreateOrConnectWithoutUserInput[]
+  createMany?: Prisma.SessionCreateManyUserInputEnvelope
+  connect?: Prisma.SessionWhereUniqueInput | Prisma.SessionWhereUniqueInput[]
+}
+
+export type SessionUpdateManyWithoutUserNestedInput = {
+  create?: Prisma.XOR<Prisma.SessionCreateWithoutUserInput, Prisma.SessionUncheckedCreateWithoutUserInput> | Prisma.SessionCreateWithoutUserInput[] | Prisma.SessionUncheckedCreateWithoutUserInput[]
+  connectOrCreate?: Prisma.SessionCreateOrConnectWithoutUserInput | Prisma.SessionCreateOrConnectWithoutUserInput[]
+  upsert?: Prisma.SessionUpsertWithWhereUniqueWithoutUserInput | Prisma.SessionUpsertWithWhereUniqueWithoutUserInput[]
+  createMany?: Prisma.SessionCreateManyUserInputEnvelope
+  set?: Prisma.SessionWhereUniqueInput | Prisma.SessionWhereUniqueInput[]
+  disconnect?: Prisma.SessionWhereUniqueInput | Prisma.SessionWhereUniqueInput[]
+  delete?: Prisma.SessionWhereUniqueInput | Prisma.SessionWhereUniqueInput[]
+  connect?: Prisma.SessionWhereUniqueInput | Prisma.SessionWhereUniqueInput[]
+  update?: Prisma.SessionUpdateWithWhereUniqueWithoutUserInput | Prisma.SessionUpdateWithWhereUniqueWithoutUserInput[]
+  updateMany?: Prisma.SessionUpdateManyWithWhereWithoutUserInput | Prisma.SessionUpdateManyWithWhereWithoutUserInput[]
+  deleteMany?: Prisma.SessionScalarWhereInput | Prisma.SessionScalarWhereInput[]
+}
+
+export type SessionUncheckedUpdateManyWithoutUserNestedInput = {
+  create?: Prisma.XOR<Prisma.SessionCreateWithoutUserInput, Prisma.SessionUncheckedCreateWithoutUserInput> | Prisma.SessionCreateWithoutUserInput[] | Prisma.SessionUncheckedCreateWithoutUserInput[]
+  connectOrCreate?: Prisma.SessionCreateOrConnectWithoutUserInput | Prisma.SessionCreateOrConnectWithoutUserInput[]
+  upsert?: Prisma.SessionUpsertWithWhereUniqueWithoutUserInput | Prisma.SessionUpsertWithWhereUniqueWithoutUserInput[]
+  createMany?: Prisma.SessionCreateManyUserInputEnvelope
+  set?: Prisma.SessionWhereUniqueInput | Prisma.SessionWhereUniqueInput[]
+  disconnect?: Prisma.SessionWhereUniqueInput | Prisma.SessionWhereUniqueInput[]
+  delete?: Prisma.SessionWhereUniqueInput | Prisma.SessionWhereUniqueInput[]
+  connect?: Prisma.SessionWhereUniqueInput | Prisma.SessionWhereUniqueInput[]
+  update?: Prisma.SessionUpdateWithWhereUniqueWithoutUserInput | Prisma.SessionUpdateWithWhereUniqueWithoutUserInput[]
+  updateMany?: Prisma.SessionUpdateManyWithWhereWithoutUserInput | Prisma.SessionUpdateManyWithWhereWithoutUserInput[]
+  deleteMany?: Prisma.SessionScalarWhereInput | Prisma.SessionScalarWhereInput[]
 }
 
 export type NullableIntFieldUpdateOperationsInput = {
@@ -486,20 +484,20 @@ export type SessionUpdateOneRequiredWithoutItemsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.SessionUpdateToOneWithWhereWithoutItemsInput, Prisma.SessionUpdateWithoutItemsInput>, Prisma.SessionUncheckedUpdateWithoutItemsInput>
 }
 
-export type SessionCreateNestedOneWithoutDaysInput = {
-  create?: Prisma.XOR<Prisma.SessionCreateWithoutDaysInput, Prisma.SessionUncheckedCreateWithoutDaysInput>
-  connectOrCreate?: Prisma.SessionCreateOrConnectWithoutDaysInput
+export type SessionCreateNestedOneWithoutWeekDaysInput = {
+  create?: Prisma.XOR<Prisma.SessionCreateWithoutWeekDaysInput, Prisma.SessionUncheckedCreateWithoutWeekDaysInput>
+  connectOrCreate?: Prisma.SessionCreateOrConnectWithoutWeekDaysInput
   connect?: Prisma.SessionWhereUniqueInput
 }
 
-export type SessionUpdateOneWithoutDaysNestedInput = {
-  create?: Prisma.XOR<Prisma.SessionCreateWithoutDaysInput, Prisma.SessionUncheckedCreateWithoutDaysInput>
-  connectOrCreate?: Prisma.SessionCreateOrConnectWithoutDaysInput
-  upsert?: Prisma.SessionUpsertWithoutDaysInput
+export type SessionUpdateOneWithoutWeekDaysNestedInput = {
+  create?: Prisma.XOR<Prisma.SessionCreateWithoutWeekDaysInput, Prisma.SessionUncheckedCreateWithoutWeekDaysInput>
+  connectOrCreate?: Prisma.SessionCreateOrConnectWithoutWeekDaysInput
+  upsert?: Prisma.SessionUpsertWithoutWeekDaysInput
   disconnect?: Prisma.SessionWhereInput | boolean
   delete?: Prisma.SessionWhereInput | boolean
   connect?: Prisma.SessionWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.SessionUpdateToOneWithWhereWithoutDaysInput, Prisma.SessionUpdateWithoutDaysInput>, Prisma.SessionUncheckedUpdateWithoutDaysInput>
+  update?: Prisma.XOR<Prisma.XOR<Prisma.SessionUpdateToOneWithWhereWithoutWeekDaysInput, Prisma.SessionUpdateWithoutWeekDaysInput>, Prisma.SessionUncheckedUpdateWithoutWeekDaysInput>
 }
 
 export type SessionCreateNestedOneWithoutHistoryInput = {
@@ -516,29 +514,84 @@ export type SessionUpdateOneRequiredWithoutHistoryNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.SessionUpdateToOneWithWhereWithoutHistoryInput, Prisma.SessionUpdateWithoutHistoryInput>, Prisma.SessionUncheckedUpdateWithoutHistoryInput>
 }
 
+export type SessionCreateWithoutUserInput = {
+  id?: string
+  slug: string
+  name: string
+  type: string
+  estimatedDurationMinutes?: number | null
+  items?: Prisma.SessionExerciseCreateNestedManyWithoutSessionInput
+  weekDays?: Prisma.WeekDayCreateNestedManyWithoutSessionInput
+  history?: Prisma.SessionHistoryCreateNestedManyWithoutSessionInput
+}
+
+export type SessionUncheckedCreateWithoutUserInput = {
+  id?: string
+  slug: string
+  name: string
+  type: string
+  estimatedDurationMinutes?: number | null
+  items?: Prisma.SessionExerciseUncheckedCreateNestedManyWithoutSessionInput
+  weekDays?: Prisma.WeekDayUncheckedCreateNestedManyWithoutSessionInput
+  history?: Prisma.SessionHistoryUncheckedCreateNestedManyWithoutSessionInput
+}
+
+export type SessionCreateOrConnectWithoutUserInput = {
+  where: Prisma.SessionWhereUniqueInput
+  create: Prisma.XOR<Prisma.SessionCreateWithoutUserInput, Prisma.SessionUncheckedCreateWithoutUserInput>
+}
+
+export type SessionCreateManyUserInputEnvelope = {
+  data: Prisma.SessionCreateManyUserInput | Prisma.SessionCreateManyUserInput[]
+}
+
+export type SessionUpsertWithWhereUniqueWithoutUserInput = {
+  where: Prisma.SessionWhereUniqueInput
+  update: Prisma.XOR<Prisma.SessionUpdateWithoutUserInput, Prisma.SessionUncheckedUpdateWithoutUserInput>
+  create: Prisma.XOR<Prisma.SessionCreateWithoutUserInput, Prisma.SessionUncheckedCreateWithoutUserInput>
+}
+
+export type SessionUpdateWithWhereUniqueWithoutUserInput = {
+  where: Prisma.SessionWhereUniqueInput
+  data: Prisma.XOR<Prisma.SessionUpdateWithoutUserInput, Prisma.SessionUncheckedUpdateWithoutUserInput>
+}
+
+export type SessionUpdateManyWithWhereWithoutUserInput = {
+  where: Prisma.SessionScalarWhereInput
+  data: Prisma.XOR<Prisma.SessionUpdateManyMutationInput, Prisma.SessionUncheckedUpdateManyWithoutUserInput>
+}
+
+export type SessionScalarWhereInput = {
+  AND?: Prisma.SessionScalarWhereInput | Prisma.SessionScalarWhereInput[]
+  OR?: Prisma.SessionScalarWhereInput[]
+  NOT?: Prisma.SessionScalarWhereInput | Prisma.SessionScalarWhereInput[]
+  id?: Prisma.StringFilter<"Session"> | string
+  userId?: Prisma.StringNullableFilter<"Session"> | string | null
+  slug?: Prisma.StringFilter<"Session"> | string
+  name?: Prisma.StringFilter<"Session"> | string
+  type?: Prisma.StringFilter<"Session"> | string
+  estimatedDurationMinutes?: Prisma.IntNullableFilter<"Session"> | number | null
+}
+
 export type SessionCreateWithoutItemsInput = {
   id?: string
   slug: string
   name: string
   type: string
   estimatedDurationMinutes?: number | null
-  rounds?: number | null
-  restBetweenExercisesSeconds?: number | null
-  restBetweenRoundsSeconds?: number | null
-  days?: Prisma.WeekDayCreateNestedManyWithoutSessionInput
+  user?: Prisma.UserCreateNestedOneWithoutSessionsInput
+  weekDays?: Prisma.WeekDayCreateNestedManyWithoutSessionInput
   history?: Prisma.SessionHistoryCreateNestedManyWithoutSessionInput
 }
 
 export type SessionUncheckedCreateWithoutItemsInput = {
   id?: string
+  userId?: string | null
   slug: string
   name: string
   type: string
   estimatedDurationMinutes?: number | null
-  rounds?: number | null
-  restBetweenExercisesSeconds?: number | null
-  restBetweenRoundsSeconds?: number | null
-  days?: Prisma.WeekDayUncheckedCreateNestedManyWithoutSessionInput
+  weekDays?: Prisma.WeekDayUncheckedCreateNestedManyWithoutSessionInput
   history?: Prisma.SessionHistoryUncheckedCreateNestedManyWithoutSessionInput
 }
 
@@ -564,90 +617,78 @@ export type SessionUpdateWithoutItemsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   estimatedDurationMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  rounds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  restBetweenExercisesSeconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  restBetweenRoundsSeconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  days?: Prisma.WeekDayUpdateManyWithoutSessionNestedInput
+  user?: Prisma.UserUpdateOneWithoutSessionsNestedInput
+  weekDays?: Prisma.WeekDayUpdateManyWithoutSessionNestedInput
   history?: Prisma.SessionHistoryUpdateManyWithoutSessionNestedInput
 }
 
 export type SessionUncheckedUpdateWithoutItemsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   estimatedDurationMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  rounds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  restBetweenExercisesSeconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  restBetweenRoundsSeconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  days?: Prisma.WeekDayUncheckedUpdateManyWithoutSessionNestedInput
+  weekDays?: Prisma.WeekDayUncheckedUpdateManyWithoutSessionNestedInput
   history?: Prisma.SessionHistoryUncheckedUpdateManyWithoutSessionNestedInput
 }
 
-export type SessionCreateWithoutDaysInput = {
+export type SessionCreateWithoutWeekDaysInput = {
   id?: string
   slug: string
   name: string
   type: string
   estimatedDurationMinutes?: number | null
-  rounds?: number | null
-  restBetweenExercisesSeconds?: number | null
-  restBetweenRoundsSeconds?: number | null
+  user?: Prisma.UserCreateNestedOneWithoutSessionsInput
   items?: Prisma.SessionExerciseCreateNestedManyWithoutSessionInput
   history?: Prisma.SessionHistoryCreateNestedManyWithoutSessionInput
 }
 
-export type SessionUncheckedCreateWithoutDaysInput = {
+export type SessionUncheckedCreateWithoutWeekDaysInput = {
   id?: string
+  userId?: string | null
   slug: string
   name: string
   type: string
   estimatedDurationMinutes?: number | null
-  rounds?: number | null
-  restBetweenExercisesSeconds?: number | null
-  restBetweenRoundsSeconds?: number | null
   items?: Prisma.SessionExerciseUncheckedCreateNestedManyWithoutSessionInput
   history?: Prisma.SessionHistoryUncheckedCreateNestedManyWithoutSessionInput
 }
 
-export type SessionCreateOrConnectWithoutDaysInput = {
+export type SessionCreateOrConnectWithoutWeekDaysInput = {
   where: Prisma.SessionWhereUniqueInput
-  create: Prisma.XOR<Prisma.SessionCreateWithoutDaysInput, Prisma.SessionUncheckedCreateWithoutDaysInput>
+  create: Prisma.XOR<Prisma.SessionCreateWithoutWeekDaysInput, Prisma.SessionUncheckedCreateWithoutWeekDaysInput>
 }
 
-export type SessionUpsertWithoutDaysInput = {
-  update: Prisma.XOR<Prisma.SessionUpdateWithoutDaysInput, Prisma.SessionUncheckedUpdateWithoutDaysInput>
-  create: Prisma.XOR<Prisma.SessionCreateWithoutDaysInput, Prisma.SessionUncheckedCreateWithoutDaysInput>
+export type SessionUpsertWithoutWeekDaysInput = {
+  update: Prisma.XOR<Prisma.SessionUpdateWithoutWeekDaysInput, Prisma.SessionUncheckedUpdateWithoutWeekDaysInput>
+  create: Prisma.XOR<Prisma.SessionCreateWithoutWeekDaysInput, Prisma.SessionUncheckedCreateWithoutWeekDaysInput>
   where?: Prisma.SessionWhereInput
 }
 
-export type SessionUpdateToOneWithWhereWithoutDaysInput = {
+export type SessionUpdateToOneWithWhereWithoutWeekDaysInput = {
   where?: Prisma.SessionWhereInput
-  data: Prisma.XOR<Prisma.SessionUpdateWithoutDaysInput, Prisma.SessionUncheckedUpdateWithoutDaysInput>
+  data: Prisma.XOR<Prisma.SessionUpdateWithoutWeekDaysInput, Prisma.SessionUncheckedUpdateWithoutWeekDaysInput>
 }
 
-export type SessionUpdateWithoutDaysInput = {
+export type SessionUpdateWithoutWeekDaysInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   estimatedDurationMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  rounds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  restBetweenExercisesSeconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  restBetweenRoundsSeconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  user?: Prisma.UserUpdateOneWithoutSessionsNestedInput
   items?: Prisma.SessionExerciseUpdateManyWithoutSessionNestedInput
   history?: Prisma.SessionHistoryUpdateManyWithoutSessionNestedInput
 }
 
-export type SessionUncheckedUpdateWithoutDaysInput = {
+export type SessionUncheckedUpdateWithoutWeekDaysInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   estimatedDurationMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  rounds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  restBetweenExercisesSeconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  restBetweenRoundsSeconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   items?: Prisma.SessionExerciseUncheckedUpdateManyWithoutSessionNestedInput
   history?: Prisma.SessionHistoryUncheckedUpdateManyWithoutSessionNestedInput
 }
@@ -658,24 +699,20 @@ export type SessionCreateWithoutHistoryInput = {
   name: string
   type: string
   estimatedDurationMinutes?: number | null
-  rounds?: number | null
-  restBetweenExercisesSeconds?: number | null
-  restBetweenRoundsSeconds?: number | null
+  user?: Prisma.UserCreateNestedOneWithoutSessionsInput
   items?: Prisma.SessionExerciseCreateNestedManyWithoutSessionInput
-  days?: Prisma.WeekDayCreateNestedManyWithoutSessionInput
+  weekDays?: Prisma.WeekDayCreateNestedManyWithoutSessionInput
 }
 
 export type SessionUncheckedCreateWithoutHistoryInput = {
   id?: string
+  userId?: string | null
   slug: string
   name: string
   type: string
   estimatedDurationMinutes?: number | null
-  rounds?: number | null
-  restBetweenExercisesSeconds?: number | null
-  restBetweenRoundsSeconds?: number | null
   items?: Prisma.SessionExerciseUncheckedCreateNestedManyWithoutSessionInput
-  days?: Prisma.WeekDayUncheckedCreateNestedManyWithoutSessionInput
+  weekDays?: Prisma.WeekDayUncheckedCreateNestedManyWithoutSessionInput
 }
 
 export type SessionCreateOrConnectWithoutHistoryInput = {
@@ -700,24 +737,58 @@ export type SessionUpdateWithoutHistoryInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   estimatedDurationMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  rounds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  restBetweenExercisesSeconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  restBetweenRoundsSeconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  user?: Prisma.UserUpdateOneWithoutSessionsNestedInput
   items?: Prisma.SessionExerciseUpdateManyWithoutSessionNestedInput
-  days?: Prisma.WeekDayUpdateManyWithoutSessionNestedInput
+  weekDays?: Prisma.WeekDayUpdateManyWithoutSessionNestedInput
 }
 
 export type SessionUncheckedUpdateWithoutHistoryInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  estimatedDurationMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  items?: Prisma.SessionExerciseUncheckedUpdateManyWithoutSessionNestedInput
+  weekDays?: Prisma.WeekDayUncheckedUpdateManyWithoutSessionNestedInput
+}
+
+export type SessionCreateManyUserInput = {
+  id?: string
+  slug: string
+  name: string
+  type: string
+  estimatedDurationMinutes?: number | null
+}
+
+export type SessionUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   estimatedDurationMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  rounds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  restBetweenExercisesSeconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  restBetweenRoundsSeconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  items?: Prisma.SessionExerciseUpdateManyWithoutSessionNestedInput
+  weekDays?: Prisma.WeekDayUpdateManyWithoutSessionNestedInput
+  history?: Prisma.SessionHistoryUpdateManyWithoutSessionNestedInput
+}
+
+export type SessionUncheckedUpdateWithoutUserInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  estimatedDurationMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   items?: Prisma.SessionExerciseUncheckedUpdateManyWithoutSessionNestedInput
-  days?: Prisma.WeekDayUncheckedUpdateManyWithoutSessionNestedInput
+  weekDays?: Prisma.WeekDayUncheckedUpdateManyWithoutSessionNestedInput
+  history?: Prisma.SessionHistoryUncheckedUpdateManyWithoutSessionNestedInput
+}
+
+export type SessionUncheckedUpdateManyWithoutUserInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  estimatedDurationMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
 }
 
 
@@ -727,13 +798,13 @@ export type SessionUncheckedUpdateWithoutHistoryInput = {
 
 export type SessionCountOutputType = {
   items: number
-  days: number
+  weekDays: number
   history: number
 }
 
 export type SessionCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   items?: boolean | SessionCountOutputTypeCountItemsArgs
-  days?: boolean | SessionCountOutputTypeCountDaysArgs
+  weekDays?: boolean | SessionCountOutputTypeCountWeekDaysArgs
   history?: boolean | SessionCountOutputTypeCountHistoryArgs
 }
 
@@ -757,7 +828,7 @@ export type SessionCountOutputTypeCountItemsArgs<ExtArgs extends runtime.Types.E
 /**
  * SessionCountOutputType without action
  */
-export type SessionCountOutputTypeCountDaysArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+export type SessionCountOutputTypeCountWeekDaysArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.WeekDayWhereInput
 }
 
@@ -771,78 +842,77 @@ export type SessionCountOutputTypeCountHistoryArgs<ExtArgs extends runtime.Types
 
 export type SessionSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  userId?: boolean
   slug?: boolean
   name?: boolean
   type?: boolean
   estimatedDurationMinutes?: boolean
-  rounds?: boolean
-  restBetweenExercisesSeconds?: boolean
-  restBetweenRoundsSeconds?: boolean
+  user?: boolean | Prisma.Session$userArgs<ExtArgs>
   items?: boolean | Prisma.Session$itemsArgs<ExtArgs>
-  days?: boolean | Prisma.Session$daysArgs<ExtArgs>
+  weekDays?: boolean | Prisma.Session$weekDaysArgs<ExtArgs>
   history?: boolean | Prisma.Session$historyArgs<ExtArgs>
   _count?: boolean | Prisma.SessionCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["session"]>
 
 export type SessionSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  userId?: boolean
   slug?: boolean
   name?: boolean
   type?: boolean
   estimatedDurationMinutes?: boolean
-  rounds?: boolean
-  restBetweenExercisesSeconds?: boolean
-  restBetweenRoundsSeconds?: boolean
+  user?: boolean | Prisma.Session$userArgs<ExtArgs>
 }, ExtArgs["result"]["session"]>
 
 export type SessionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  userId?: boolean
   slug?: boolean
   name?: boolean
   type?: boolean
   estimatedDurationMinutes?: boolean
-  rounds?: boolean
-  restBetweenExercisesSeconds?: boolean
-  restBetweenRoundsSeconds?: boolean
+  user?: boolean | Prisma.Session$userArgs<ExtArgs>
 }, ExtArgs["result"]["session"]>
 
 export type SessionSelectScalar = {
   id?: boolean
+  userId?: boolean
   slug?: boolean
   name?: boolean
   type?: boolean
   estimatedDurationMinutes?: boolean
-  rounds?: boolean
-  restBetweenExercisesSeconds?: boolean
-  restBetweenRoundsSeconds?: boolean
 }
 
-export type SessionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "slug" | "name" | "type" | "estimatedDurationMinutes" | "rounds" | "restBetweenExercisesSeconds" | "restBetweenRoundsSeconds", ExtArgs["result"]["session"]>
+export type SessionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "slug" | "name" | "type" | "estimatedDurationMinutes", ExtArgs["result"]["session"]>
 export type SessionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  user?: boolean | Prisma.Session$userArgs<ExtArgs>
   items?: boolean | Prisma.Session$itemsArgs<ExtArgs>
-  days?: boolean | Prisma.Session$daysArgs<ExtArgs>
+  weekDays?: boolean | Prisma.Session$weekDaysArgs<ExtArgs>
   history?: boolean | Prisma.Session$historyArgs<ExtArgs>
   _count?: boolean | Prisma.SessionCountOutputTypeDefaultArgs<ExtArgs>
 }
-export type SessionIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
-export type SessionIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
+export type SessionIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  user?: boolean | Prisma.Session$userArgs<ExtArgs>
+}
+export type SessionIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  user?: boolean | Prisma.Session$userArgs<ExtArgs>
+}
 
 export type $SessionPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Session"
   objects: {
+    user: Prisma.$UserPayload<ExtArgs> | null
     items: Prisma.$SessionExercisePayload<ExtArgs>[]
-    days: Prisma.$WeekDayPayload<ExtArgs>[]
+    weekDays: Prisma.$WeekDayPayload<ExtArgs>[]
     history: Prisma.$SessionHistoryPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
+    userId: string | null
     slug: string
     name: string
     type: string
     estimatedDurationMinutes: number | null
-    rounds: number | null
-    restBetweenExercisesSeconds: number | null
-    restBetweenRoundsSeconds: number | null
   }, ExtArgs["result"]["session"]>
   composites: {}
 }
@@ -1237,8 +1307,9 @@ readonly fields: SessionFieldRefs;
  */
 export interface Prisma__SessionClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  user<T extends Prisma.Session$userArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Session$userArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   items<T extends Prisma.Session$itemsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Session$itemsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SessionExercisePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  days<T extends Prisma.Session$daysArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Session$daysArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$WeekDayPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  weekDays<T extends Prisma.Session$weekDaysArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Session$weekDaysArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$WeekDayPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   history<T extends Prisma.Session$historyArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Session$historyArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SessionHistoryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -1270,13 +1341,11 @@ export interface Prisma__SessionClient<T, Null = never, ExtArgs extends runtime.
  */
 export interface SessionFieldRefs {
   readonly id: Prisma.FieldRef<"Session", 'String'>
+  readonly userId: Prisma.FieldRef<"Session", 'String'>
   readonly slug: Prisma.FieldRef<"Session", 'String'>
   readonly name: Prisma.FieldRef<"Session", 'String'>
   readonly type: Prisma.FieldRef<"Session", 'String'>
   readonly estimatedDurationMinutes: Prisma.FieldRef<"Session", 'Int'>
-  readonly rounds: Prisma.FieldRef<"Session", 'Int'>
-  readonly restBetweenExercisesSeconds: Prisma.FieldRef<"Session", 'Int'>
-  readonly restBetweenRoundsSeconds: Prisma.FieldRef<"Session", 'Int'>
 }
     
 
@@ -1524,6 +1593,10 @@ export type SessionCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Extensi
    * The data used to create many Sessions.
    */
   data: Prisma.SessionCreateManyInput | Prisma.SessionCreateManyInput[]
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SessionIncludeCreateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1594,6 +1667,10 @@ export type SessionUpdateManyAndReturnArgs<ExtArgs extends runtime.Types.Extensi
    * Limit how many Sessions to update.
    */
   limit?: number
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SessionIncludeUpdateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1663,6 +1740,25 @@ export type SessionDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Inter
 }
 
 /**
+ * Session.user
+ */
+export type Session$userArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the User
+   */
+  select?: Prisma.UserSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the User
+   */
+  omit?: Prisma.UserOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UserInclude<ExtArgs> | null
+  where?: Prisma.UserWhereInput
+}
+
+/**
  * Session.items
  */
 export type Session$itemsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1687,9 +1783,9 @@ export type Session$itemsArgs<ExtArgs extends runtime.Types.Extensions.InternalA
 }
 
 /**
- * Session.days
+ * Session.weekDays
  */
-export type Session$daysArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+export type Session$weekDaysArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
    * Select specific fields to fetch from the WeekDay
    */

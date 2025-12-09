@@ -76,11 +76,10 @@ export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof
 export const UserScalarFieldEnum = {
   id: 'id',
   email: 'email',
-  name: 'name',
   passwordHash: 'passwordHash',
-  emailVerified: 'emailVerified',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  name: 'name'
 } as const
 
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
@@ -89,6 +88,7 @@ export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof User
 export const ExerciseScalarFieldEnum = {
   id: 'id',
   name: 'name',
+  slug: 'slug',
   muscleGroup: 'muscleGroup'
 } as const
 
@@ -97,13 +97,11 @@ export type ExerciseScalarFieldEnum = (typeof ExerciseScalarFieldEnum)[keyof typ
 
 export const SessionScalarFieldEnum = {
   id: 'id',
+  userId: 'userId',
   slug: 'slug',
   name: 'name',
   type: 'type',
-  estimatedDurationMinutes: 'estimatedDurationMinutes',
-  rounds: 'rounds',
-  restBetweenExercisesSeconds: 'restBetweenExercisesSeconds',
-  restBetweenRoundsSeconds: 'restBetweenRoundsSeconds'
+  estimatedDurationMinutes: 'estimatedDurationMinutes'
 } as const
 
 export type SessionScalarFieldEnum = (typeof SessionScalarFieldEnum)[keyof typeof SessionScalarFieldEnum]
