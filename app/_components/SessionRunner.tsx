@@ -1,584 +1,421 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { demoSessions, demoExercises } from "@/lib/demo-data";
-import type { Session } from "@/lib/types";
-import { addHistoryEntry } from "@/lib/history";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { CheckCircle2 } from "lucide-react";
 
-type Phase = "exercise" | "rest" | "roundRest" | "done";
-
-type Props = {
-  sessionId: string;
+type RunnerExercise = {
+  id: string;
+  name: string;
+  muscleGroup?: string | null;
+  sets: number;
+  reps: string;
+  restSeconds: number | null;
 };
 
-type PersistedState = {
-  sessionId: string;
-  phase: Phase;
-  currentExerciseIndex: number;
-  currentSetOrRound: number;
-  restRemaining: number | null;
-  startedAt: number | null;
-  finishedAt: number | null;
-  totalCompletedSets: number;
+type RunnerSession = {
+  id: string;
+  name: string;
+  type: "classic" | "circuit";
+  rounds?: number | null;
+  estimatedDurationMinutes?: number | null;
+  items: RunnerExercise[];
 };
 
-function formatRest(seconds: number): string {
-  const min = Math.floor(seconds / 60);
-  const sec = seconds % 60;
-  if (min === 0) return `${sec}s`;
-  if (sec === 0) return `${min} min`;
-  return `${min} min ${sec}s`;
+type SessionRunnerProps = {
+  session: RunnerSession;
+  onFinish?: (stats: {
+    totalSets: number;
+    totalExercises: number;
+    totalRounds: number;
+    elapsedSeconds: number;
+  }) => void | Promise<void>;
+};
+
+type PositionState = {
+  round: number; // 0-based
+  exercise: number; // 0-based
+  set: number; // 0-based
+  finished: boolean;
+};
+
+type Phase = "idle" | "countdown" | "running" | "paused" | "finished";
+
+const BEEP_PATH = "/sounds/beep.mp3";
+
+function playBeep() {
+  try {
+    const audio = new Audio(BEEP_PATH);
+    void audio.play();
+  } catch {
+    // pas grave si le son ne se joue pas
+  }
 }
 
-export function SessionRunner({ sessionId }: Props) {
-  const session = demoSessions.find((s) => s.id === sessionId);
+export default function SessionRunner({ session, onFinish }: SessionRunnerProps) {
+  const router = useRouter();
 
-  const [phase, setPhase] = useState<Phase>("exercise");
-  const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
-  const [currentSetOrRound, setCurrentSetOrRound] = useState(1);
-  const [restRemaining, setRestRemaining] = useState<number | null>(null);
-  const [startedAt, setStartedAt] = useState<number | null>(null);
-  const [finishedAt, setFinishedAt] = useState<number | null>(null);
-  const [totalCompletedSets, setTotalCompletedSets] = useState(0);
+  const totalRounds = session.type === "circuit" ? session.rounds ?? 1 : 1;
+  const totalExercises = session.items.length;
 
-  const storageKey = `calyfit_session_${sessionId}`;
+  const totalPlannedSets = useMemo(() => {
+    const baseSets = session.items.reduce((sum, ex) => sum + ex.sets, 0);
+    return baseSets * totalRounds;
+  }, [session, totalRounds]);
 
-  // 🔁 Charger la progression depuis localStorage au montage
+  const [position, setPosition] = useState<PositionState>({
+    round: 0,
+    exercise: 0,
+    set: 0,
+    finished: false,
+  });
+
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  const isRunning = phase === "running";
+
+  // chrono global
   useEffect(() => {
-    if (typeof window === "undefined" || !session) return;
-    try {
-      const raw = window.localStorage.getItem(storageKey);
-      if (!raw) {
-        setStartedAt(Date.now());
-        return;
-      }
-      const parsed: PersistedState = JSON.parse(raw);
-
-      if (parsed.sessionId !== sessionId) {
-        setStartedAt(Date.now());
-        return;
-      }
-
-      setPhase(parsed.phase);
-      setCurrentExerciseIndex(parsed.currentExerciseIndex);
-      setCurrentSetOrRound(parsed.currentSetOrRound);
-      setRestRemaining(parsed.restRemaining);
-      setStartedAt(parsed.startedAt ?? Date.now());
-      setFinishedAt(parsed.finishedAt ?? null);
-      setTotalCompletedSets(parsed.totalCompletedSets ?? 0);
-    } catch {
-      setStartedAt(Date.now());
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionId, session]);
-
-  // 🧠 Si on n'a pas encore de startedAt, on le met dès qu'on est en cours
-  useEffect(() => {
-    if (phase !== "done" && startedAt === null) {
-      setStartedAt(Date.now());
-    }
-  }, [phase, startedAt]);
-
-  // 💾 Sauvegarder la progression à chaque changement de state
-  useEffect(() => {
-    if (typeof window === "undefined" || !session) return;
-    const data: PersistedState = {
-      sessionId,
-      phase,
-      currentExerciseIndex,
-      currentSetOrRound,
-      restRemaining,
-      startedAt,
-      finishedAt,
-      totalCompletedSets,
-    };
-    try {
-      window.localStorage.setItem(storageKey, JSON.stringify(data));
-    } catch {
-      // ignore
-    }
-  }, [
-    session,
-    sessionId,
-    storageKey,
-    phase,
-    currentExerciseIndex,
-    currentSetOrRound,
-    restRemaining,
-    startedAt,
-    finishedAt,
-    totalCompletedSets,
-  ]);
-
-  // ⏱️ Timer de repos
-  useEffect(() => {
-    if ((phase !== "rest" && phase !== "roundRest") || restRemaining === null)
-      return;
-    if (restRemaining <= 0) {
-      if (phase === "rest") {
-        handleExerciseRestFinished();
-      } else {
-        handleRoundRestFinished();
-      }
-      return;
-    }
+    if (!isRunning) return;
     const id = setInterval(() => {
-      setRestRemaining((prev) => (prev === null ? prev : prev - 1));
+      setElapsedSeconds((s) => s + 1);
     }, 1000);
     return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, restRemaining]);
+  }, [isRunning]);
 
-  if (!session) {
-    return (
-      <main className="min-h-screen p-4">
-        <h1 className="text-2xl font-semibold mb-2">Séance introuvable</h1>
-        <p className="text-sm text-slate-300">
-          Aucun programme ne correspond à l&apos;id <code>{sessionId}</code>.
-        </p>
-      </main>
-    );
-  }
+  // compte à rebours 3-2-1
+  useEffect(() => {
+    if (phase !== "countdown" || countdown === null) return;
 
-  const isCircuit = session.type === "circuit";
-  const totalExercises = session.items.length;
-  const totalRounds = isCircuit && session.rounds ? session.rounds : 1;
-
-  const currentItem = session.items[currentExerciseIndex];
-  const exercise = demoExercises.find((e) => e.id === currentItem.exerciseId);
-
-  const currentSet = isCircuit ? 1 : currentSetOrRound;
-  const currentRound = isCircuit ? currentSetOrRound : 1;
-
-  const isLastExerciseInRound = currentExerciseIndex === totalExercises - 1;
-  const isLastSetForClassic =
-    !isCircuit && currentSet >= (currentItem.sets ?? 1);
-  const isLastRound = isCircuit && currentRound >= totalRounds;
-
-  const exerciseProgress = (() => {
-    if (phase === "done") return 100;
-    if (totalExercises === 0) return 0;
-    return (currentExerciseIndex / totalExercises) * 100;
-  })();
-
-  function clearStorage() {
-    if (typeof window === "undefined") return;
-    try {
-      window.localStorage.removeItem(storageKey);
-    } catch {
-      // ignore
-    }
-  }
-
-  function markSessionDone() {
-    // éviter de doubler l'entrée d'historique
-    if (finishedAt !== null) {
-      setPhase("done");
-      setRestRemaining(null);
+    if (countdown <= 0) {
+      // fin du compte à rebours → démarrer
+      playBeep();
+      setCountdown(null);
+      setPhase("running");
       return;
     }
 
-    const end = Date.now();
-    const durationSeconds =
-      startedAt != null ? Math.max(0, Math.round((end - startedAt) / 1000)) : 0;
+    const id = setTimeout(() => {
+      setCountdown((c) => (c === null ? null : c - 1));
+    }, 1000);
 
-    setPhase("done");
-    setFinishedAt(end);
-    setRestRemaining(null);
+    return () => clearTimeout(id);
+  }, [phase, countdown]);
 
-    try {
-      addHistoryEntry({
-        id: `${sessionId}-${end}`,
-        sessionId,
-        finishedAt: end,
-        durationSeconds,
-        totalCompletedSets,
-      });
-    } catch {
-      // ignore
-    }
+  // appel onFinish quand tout est terminé
+  useEffect(() => {
+    if (!position.finished || !onFinish) return;
+
+    setPhase("finished");
+
+    const stats = {
+      totalSets: totalPlannedSets,
+      totalExercises,
+      totalRounds,
+      elapsedSeconds,
+    };
+
+    void onFinish(stats);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [position.finished]);
+
+  const currentExercise = session.items[position.exercise];
+
+  const percentDone = useMemo(() => {
+    if (!totalPlannedSets) return 0;
+
+    const setsPerRound = session.items.reduce((sum, ex) => sum + ex.sets, 0);
+
+    const setsDonePreviousRounds = position.round * setsPerRound;
+    const setsDonePreviousExercises = session.items
+      .slice(0, position.exercise)
+      .reduce((sum, ex) => sum + ex.sets, 0);
+
+    const setsDoneCurrentExercise = position.set;
+    const raw =
+      setsDonePreviousRounds +
+      setsDonePreviousExercises +
+      setsDoneCurrentExercise;
+
+    const clamped = Math.min(raw, totalPlannedSets);
+    return Math.round((clamped / totalPlannedSets) * 100);
+  }, [position, session.items, totalPlannedSets]);
+
+  function formatTime(sec: number) {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m.toString().padStart(2, "0")}:${s
+      .toString()
+      .padStart(2, "0")}`;
   }
 
   function resetSession() {
-    setPhase("exercise");
-    setCurrentExerciseIndex(0);
-    setCurrentSetOrRound(1);
-    setRestRemaining(null);
-    setStartedAt(Date.now());
-    setFinishedAt(null);
-    setTotalCompletedSets(0);
-    clearStorage();
+    setPosition({ round: 0, exercise: 0, set: 0, finished: false });
+    setElapsedSeconds(0);
+    setPhase("idle");
+    setCountdown(null);
   }
 
-  function goToNextExerciseClassic() {
-    if (currentExerciseIndex + 1 >= totalExercises) {
-      markSessionDone();
-      return;
+  function startWithCountdown() {
+    if (position.finished) {
+      resetSession();
     }
-    setCurrentExerciseIndex((prev) => prev + 1);
-    setCurrentSetOrRound(1);
-    setPhase("exercise");
-    setRestRemaining(null);
+    setCountdown(3);
+    setPhase("countdown");
   }
 
-  function handleExerciseRestFinished() {
-    if (isCircuit) {
-      if (!isLastExerciseInRound) {
-        setCurrentExerciseIndex((prev) => prev + 1);
-        setPhase("exercise");
-        setRestRemaining(null);
-      } else {
-        if (!isLastRound) {
-          setPhase("roundRest");
-          setRestRemaining(session.restBetweenRoundsSeconds ?? 0);
-        } else {
-          markSessionDone();
-        }
+  function pauseSession() {
+    if (phase === "running") {
+      setPhase("paused");
+    }
+  }
+
+  function handleNextSet() {
+    if (position.finished || !session.items.length) return;
+
+    setPosition((prev) => {
+      const exCount = session.items.length;
+      const ex = session.items[prev.exercise];
+
+      const lastSetForExercise = prev.set + 1 >= ex.sets;
+      const lastExercise = prev.exercise + 1 >= exCount;
+      const lastRound = prev.round + 1 >= totalRounds;
+
+      if (!lastSetForExercise) {
+        return { ...prev, set: prev.set + 1 };
       }
-      return;
-    }
 
-    if (!isLastSetForClassic) {
-      setCurrentSetOrRound((prev) => prev + 1);
-      setPhase("exercise");
-      setRestRemaining(null);
-    } else {
-      goToNextExerciseClassic();
-    }
-  }
-
-  function handleRoundRestFinished() {
-    if (!isCircuit) {
-      setPhase("exercise");
-      setRestRemaining(null);
-      return;
-    }
-
-    if (!isLastRound) {
-      setCurrentSetOrRound((prev) => prev + 1);
-      setCurrentExerciseIndex(0);
-      setPhase("exercise");
-      setRestRemaining(null);
-    } else {
-      markSessionDone();
-    }
-  }
-
-  function handleSetDone() {
-    // On compte chaque click comme une "série" / "bloc" validé
-    setTotalCompletedSets((prev) => prev + 1);
-
-    if (isCircuit) {
-      if (!isLastExerciseInRound) {
-        const restSeconds =
-          session.restBetweenExercisesSeconds ?? currentItem.restSeconds ?? 0;
-        if (restSeconds > 0) {
-          setPhase("rest");
-          setRestRemaining(restSeconds);
-        } else {
-          setCurrentExerciseIndex((prev) => prev + 1);
-          setPhase("exercise");
-        }
-      } else {
-        if (!isLastRound) {
-          const roundRest =
-            session.restBetweenRoundsSeconds ??
-            currentItem.restSeconds ??
-            0;
-          if (roundRest > 0) {
-            setPhase("roundRest");
-            setRestRemaining(roundRest);
-          } else {
-            setCurrentSetOrRound((prev) => prev + 1);
-            setCurrentExerciseIndex(0);
-            setPhase("exercise");
-          }
-        } else {
-          markSessionDone();
-        }
+      if (!lastExercise) {
+        return { ...prev, exercise: prev.exercise + 1, set: 0 };
       }
-      return;
-    }
 
-    const restSeconds = currentItem.restSeconds ?? 0;
-    if (restSeconds > 0) {
-      setPhase("rest");
-      setRestRemaining(restSeconds);
-    } else {
-      handleExerciseRestFinished();
-    }
-  }
-
-  function skipRest() {
-    if (phase === "rest") {
-      handleExerciseRestFinished();
-    } else if (phase === "roundRest") {
-      handleRoundRestFinished();
-    }
-  }
-
-  function skipExercise() {
-    if (isCircuit) {
-      if (!isLastExerciseInRound) {
-        setCurrentExerciseIndex((prev) => prev + 1);
-        setPhase("exercise");
-        setRestRemaining(null);
-      } else {
-        if (!isLastRound) {
-          setCurrentSetOrRound((prev) => prev + 1);
-          setCurrentExerciseIndex(0);
-          setPhase("exercise");
-          setRestRemaining(null);
-        } else {
-          markSessionDone();
-        }
+      if (!lastRound) {
+        return { round: prev.round + 1, exercise: 0, set: 0, finished: false };
       }
-      return;
-    }
 
-    goToNextExerciseClassic();
+      return { ...prev, finished: true };
+    });
   }
 
-  // === ÉCRAN FIN DE SÉANCE AVEC RÉSUMÉ ===
-
-  if (phase === "done") {
-    const end = finishedAt ?? Date.now();
-    const durationSeconds =
-      startedAt != null ? Math.max(0, Math.round((end - startedAt) / 1000)) : null;
-    const durationMinutes =
-      durationSeconds != null ? Math.floor(durationSeconds / 60) : null;
-    const durationRemainder =
-      durationSeconds != null ? durationSeconds % 60 : null;
-
-    return (
-      <main className="min-h-screen p-4">
-        <header className="mb-4">
-          <p className="text-xs text-slate-400 uppercase tracking-wide">
-            Séance terminée
-          </p>
-          <h1 className="text-2xl font-semibold">{session.name}</h1>
-        </header>
-
-        <div className="rounded-2xl border border-emerald-700 bg-emerald-950/40 p-4 mb-4">
-          <p className="text-lg font-semibold text-emerald-100 mb-1">
-            Bien joué 💪
-          </p>
-          <p className="text-sm text-emerald-100 mb-3">
-            Tu as terminé cette séance. Bois un coup, respire et profite de la
-            récup.
-          </p>
-
-          <div className="space-y-1 text-sm text-emerald-100">
-            {durationSeconds != null && (
-              <p>
-                Temps total :{" "}
-                <span className="font-semibold">
-                  {durationMinutes && durationMinutes > 0
-                    ? `${durationMinutes} min `
-                    : ""}
-                  {durationRemainder != null
-                    ? `${durationRemainder}s`
-                    : ""}
-                </span>
-              </p>
-            )}
-            <p>
-              Séries / blocs validés :{" "}
-              <span className="font-semibold">
-                {totalCompletedSets}
-              </span>
-            </p>
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <button
-            onClick={resetSession}
-            className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-800"
-          >
-            Recommencer la séance
-          </button>
-          <Link
-            href="/"
-            className="block w-full rounded-xl bg-sky-600 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-sky-500 active:scale-[0.99]"
-          >
-            Revenir au menu
-          </Link>
-        </div>
-      </main>
-    );
+  function handleBeepRest() {
+    playBeep();
   }
 
-  // === ÉCRAN EN COURS DE SÉANCE ===
+  function handleBack() {
+    router.back();
+  }
 
-  const repsLabel =
-    currentItem.reps.type === "reps"
-      ? `${currentItem.reps.value} reps`
-      : `${currentItem.reps.seconds}s`;
+  const roundLabel =
+    totalRounds > 1
+      ? `Tour ${position.round + 1}/${totalRounds}`
+      : "Séance";
+  const setLabel =
+    currentExercise?.sets != null
+      ? `${position.set + 1}/${currentExercise.sets}`
+      : `${position.set + 1}`;
+  const finished = phase === "finished" || position.finished;
 
-  const nextExerciseInCircuit =
-    isCircuit && !isLastExerciseInRound
-      ? session.items[currentExerciseIndex + 1]
-      : null;
-  const nextExerciseEntity =
-    nextExerciseInCircuit &&
-    demoExercises.find((e) => e.id === nextExerciseInCircuit.exerciseId);
+  const showCountdownOverlay = phase === "countdown" && countdown !== null;
 
   return (
-    <main className="min-h-screen p-4">
-      <header className="mb-3">
-        <p className="text-xs text-slate-400 uppercase tracking-wide">
-          En cours
-        </p>
-        <h1 className="text-xl font-semibold">{session.name}</h1>
-        {isCircuit && (
-          <p className="text-xs text-slate-400 mt-1">
-            Circuit • Tour {currentRound} / {totalRounds}
+    // FULLSCREEN overlay au-dessus de toute l’app (navbar incluse)
+    <div className="fixed inset-0 z-40 flex flex-col bg-gradient-to-b from-slate-950 via-slate-950 to-black px-4 pb-4 pt-3">
+      {/* HEADER */}
+      <header className="mb-3 flex items-center justify-between">
+        <button
+          type="button"
+          onClick={handleBack}
+          className="inline-flex items-center gap-1 rounded-full border border-slate-800 bg-slate-950/80 px-3 py-1 text-[11px] text-slate-300 hover:bg-slate-900"
+        >
+          <span className="text-sm">←</span>
+          <span>Retour</span>
+        </button>
+
+        <div className="text-right">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
+            Entraînement
           </p>
-        )}
+          <p className="text-[13px] font-semibold text-slate-50 line-clamp-1">
+            {session.name}
+          </p>
+        </div>
       </header>
 
-      {/* Progression exos */}
-      <div className="mb-4">
-        <div className="flex justify-between text-[11px] text-slate-400 mb-1">
-          <span>
-            Exercice {currentExerciseIndex + 1} / {totalExercises}
-          </span>
-          {isCircuit ? (
-            <span>
-              Tour {currentRound} / {totalRounds}
+      {/* CONTENU PRINCIPAL */}
+      <div className="flex flex-1 flex-col gap-4">
+        {/* BLOC CHRONO */}
+        <section className="relative flex flex-col items-center justify-center rounded-3xl border border-slate-800 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950 px-6 py-6 shadow-[0_18px_45px_rgba(15,23,42,0.9)]">
+          <p className="text-[11px] text-slate-400 uppercase tracking-[0.18em]">
+            Temps total
+          </p>
+          <p className="mt-1 text-5xl font-mono tabular-nums text-slate-50">
+            {formatTime(elapsedSeconds)}
+          </p>
+
+          <div className="mt-3 flex items-center gap-2 text-[11px] text-slate-300">
+            <span className="rounded-full bg-slate-900/80 px-2 py-1">
+              {roundLabel}
             </span>
-          ) : (
-            <span>
-              Série {currentSet} / {currentItem.sets}
+            <span className="rounded-full bg-slate-900/80 px-2 py-1">
+              Exo {position.exercise + 1}/{totalExercises || 1}
             </span>
+            <span className="rounded-full bg-slate-900/80 px-2 py-1">
+              Série {setLabel}
+            </span>
+          </div>
+
+          <div className="mt-4 flex w-full items-center gap-2">
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-800">
+              <div
+                className="h-full rounded-full bg-emerald-400 transition-all"
+                style={{ width: `${percentDone}%` }}
+              />
+            </div>
+            <span className="w-10 text-right text-[10px] text-slate-300">
+              {percentDone}%
+            </span>
+          </div>
+
+          {/* OVERLAY COMPTE À REBOURS */}
+          {showCountdownOverlay && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70">
+              <p className="mb-2 text-[11px] uppercase tracking-[0.2em] text-slate-400">
+                Prêt ?
+              </p>
+              <p className="text-6xl font-semibold text-slate-50">
+                {countdown}
+              </p>
+            </div>
           )}
-        </div>
-        <div className="h-2 w-full overflow-hidden rounded-full bg-slate-900">
-          <div
-            className="h-full rounded-full bg-sky-500"
-            style={{ width: `${exerciseProgress}%` }}
-          />
-        </div>
+        </section>
+
+        {/* EXERCICE COURANT */}
+        <section className="flex-1 space-y-3 rounded-3xl border border-slate-800 bg-slate-950/95 px-4 py-3">
+          <p className="text-[11px] text-slate-400 uppercase tracking-[0.14em]">
+            Exercice en cours
+          </p>
+
+          {currentExercise ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-base font-semibold text-slate-50">
+                    {currentExercise.name}
+                  </p>
+                  <p className="text-[11px] text-slate-500">
+                    {currentExercise.muscleGroup || "Street workout"}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-slate-700 bg-slate-900/80 px-3 py-1 text-right">
+                  <p className="text-[10px] uppercase text-slate-500">
+                    Série
+                  </p>
+                  <p className="text-[13px] font-semibold text-slate-50">
+                    {setLabel}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2 text-[10px] text-slate-300">
+                <span className="rounded-full bg-slate-900 px-2 py-1">
+                  Objectif : {currentExercise.reps || "reps libres"}
+                </span>
+                {typeof currentExercise.restSeconds === "number" &&
+                  currentExercise.restSeconds > 0 && (
+                    <span className="rounded-full bg-slate-900 px-2 py-1">
+                      Repos conseillé : {currentExercise.restSeconds}s
+                    </span>
+                  )}
+              </div>
+
+              {!finished && (
+                <button
+                  type="button"
+                  onClick={handleNextSet}
+                  className="mt-2 w-full rounded-2xl bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-900 hover:bg-white active:scale-[0.99]"
+                >
+                  Série terminée → étape suivante
+                </button>
+              )}
+
+              {finished && (
+                <div className="mt-2 flex items-start gap-2 rounded-2xl border border-emerald-500/60 bg-emerald-500/10 px-3 py-2 text-[11px] text-emerald-100">
+                  <CheckCircle2 className="mt-[2px] h-4 w-4" />
+                  <div>
+                    <p className="font-semibold">
+                      Séance terminée, bien joué 👊
+                    </p>
+                    <p className="mt-1 text-[10px] text-emerald-100/80">
+                      Temps total : {formatTime(elapsedSeconds)} ·{" "}
+                      {totalPlannedSets} séries prévues complétées.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-[11px] text-slate-500">
+              Aucun exercice configuré pour cette séance.
+            </p>
+          )}
+        </section>
       </div>
 
-      {/* Carte principale */}
-      <section className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 mb-4">
-        {phase === "exercise" && (
+      {/* BARRE D’ACTIONS EN BAS */}
+      <div className="mt-3 flex gap-2">
+        {!finished && (
           <>
-            <p className="text-xs text-sky-400 font-medium mb-1">
-              {isCircuit
-                ? `Tour ${currentRound} • Exercice ${currentExerciseIndex + 1}/${totalExercises}`
-                : `Série ${currentSet} / ${currentItem.sets}`}
-            </p>
-            <h2 className="text-lg font-semibold mb-1">
-              {exercise?.name ?? currentItem.exerciseId}
-            </h2>
-            <p className="text-sm text-slate-300 mb-2">
-              {isCircuit
-                ? `${repsLabel} par tour`
-                : `${currentItem.sets} séries • ${repsLabel}`}
-              {" • "}
-              Repos{" "}
-              {formatRest(
-                isCircuit
-                  ? session.restBetweenExercisesSeconds ??
-                      currentItem.restSeconds ??
-                      0
-                  : currentItem.restSeconds ?? 0
-              )}
-            </p>
-
-            {exercise?.description && (
-              <p className="text-xs text-slate-400 mb-2">
-                {exercise.description}
-              </p>
+            {phase === "running" && (
+              <button
+                type="button"
+                onClick={pauseSession}
+                className="flex-1 rounded-2xl bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-100 hover:bg-slate-700"
+              >
+                Pause
+              </button>
             )}
 
-            {currentItem.note && (
-              <p className="text-xs text-slate-400 italic mb-2">
-                {currentItem.note}
-              </p>
+            {(phase === "idle" || phase === "paused") && (
+              <button
+                type="button"
+                onClick={startWithCountdown}
+                className="flex-1 rounded-2xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-emerald-950 hover:bg-emerald-400"
+              >
+                Démarrer la série
+              </button>
             )}
 
             <button
-              onClick={handleSetDone}
-              className="mt-2 w-full rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-500 active:scale-[0.99]"
+              type="button"
+              onClick={handleBeepRest}
+              className="rounded-2xl border border-sky-500 bg-sky-500/10 px-4 py-2 text-xs font-medium text-sky-100 hover:bg-sky-500/20"
             >
-              Série / bloc terminé
-            </button>
-
-            <button
-              onClick={skipExercise}
-              className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-xs text-slate-200 hover:bg-slate-800"
-            >
-              Passer cet exercice
+              Beep repos
             </button>
           </>
         )}
 
-        {phase === "rest" && (
+        {finished && (
           <>
-            <p className="text-xs text-slate-400 mb-1">Repos entre exercices</p>
-            <h2 className="text-4xl font-semibold mb-1">
-              {restRemaining !== null && restRemaining > 0
-                ? restRemaining
-                : 0}
-              s
-            </h2>
-
-            {isCircuit && nextExerciseInCircuit && (
-              <p className="text-xs text-slate-400 mb-2">
-                Prochain :{" "}
-                <span className="font-medium">
-                  {nextExerciseEntity?.name ??
-                    nextExerciseInCircuit.exerciseId}
-                </span>{" "}
-                (tour {currentRound})
-              </p>
-            )}
-
-            {!isCircuit && (
-              <p className="text-xs text-slate-400 mb-2">
-                Prochaine série :{" "}
-                <span className="font-medium">
-                  {exercise?.name ?? currentItem.exerciseId}
-                </span>
-              </p>
-            )}
-
             <button
-              onClick={skipRest}
-              className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-slate-100 hover:bg-slate-800"
+              type="button"
+              onClick={() => router.push("/")}
+              className="flex-1 rounded-2xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-emerald-950 hover:bg-emerald-400"
             >
-              Passer le repos
+              Retour à l&apos;accueil
+            </button>
+            <button
+              type="button"
+              onClick={resetSession}
+              className="rounded-2xl border border-slate-600 bg-slate-900 px-4 py-2 text-xs font-medium text-slate-200 hover:bg-slate-800"
+            >
+              Refaire la séance
             </button>
           </>
         )}
-
-        {phase === "roundRest" && (
-          <>
-            <p className="text-xs text-slate-400 mb-1">Repos entre tours</p>
-            <h2 className="text-4xl font-semibold mb-1">
-              {restRemaining !== null && restRemaining > 0
-                ? restRemaining
-                : 0}
-              s
-            </h2>
-            <p className="text-xs text-slate-400 mb-2">
-              Prochain tour : {currentRound + 1} / {totalRounds}
-            </p>
-
-            <button
-              onClick={skipRest}
-              className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-slate-100 hover:bg-slate-800"
-            >
-              Passer le repos entre tours
-            </button>
-          </>
-        )}
-      </section>
-    </main>
+      </div>
+    </div>
   );
 }

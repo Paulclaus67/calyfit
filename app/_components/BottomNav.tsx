@@ -7,11 +7,11 @@ import {
   Home,
   CalendarDays,
   Dumbbell,
-  UploadCloud,
+  User,
 } from "lucide-react";
 
 type NavItem = {
-  key: "today" | "planning" | "sessions" | "import";
+  key: "today" | "planning" | "sessions" | "profile";
   href: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
@@ -21,7 +21,7 @@ const navItems: NavItem[] = [
   { key: "today", href: "/", label: "Aujourd'hui", icon: Home },
   { key: "planning", href: "/planning", label: "Planning", icon: CalendarDays },
   { key: "sessions", href: "/sessions", label: "Séances", icon: Dumbbell },
-  { key: "import", href: "/import", label: "Import", icon: UploadCloud },
+  { key: "profile", href: "/profile", label: "Profil", icon: User },
 ];
 
 function isPathActive(pathname: string, href: string) {
@@ -43,7 +43,6 @@ export function BottomNav() {
       aria-label="Navigation principale"
     >
       <div className="mx-auto max-w-md px-3">
-        {/* safe-area bottom */}
         <div className="pb-[calc(env(safe-area-inset-bottom,0px)+0.35rem)] pt-1.5">
           <div className="relative flex items-center justify-between gap-1 rounded-2xl bg-slate-900/70 px-2 py-1 shadow-[0_-6px_20px_rgba(0,0,0,0.7)]">
             {navItems.map((item) => {
@@ -56,7 +55,6 @@ export function BottomNav() {
                   href={item.href}
                   className="relative flex flex-1 items-center justify-center"
                 >
-                  {/* fond animé sous l’onglet actif */}
                   {active && (
                     <motion.div
                       layoutId="nav-active-pill"

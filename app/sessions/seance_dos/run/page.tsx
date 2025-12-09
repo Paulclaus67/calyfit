@@ -1,5 +1,9 @@
-import { SessionRunner } from "@/app/_components/SessionRunner";
+import SessionRunClient from "../../../_components/SessionRunClient";
 
-export default function Page() {
-  return <SessionRunner sessionId="seance_dos" />;
+export default function SeanceDosRunPage() {
+  return (
+    <main className="px-4 pb-4 pt-3">
+      <SessionRunClient slug="seance_dos" />
+    </main>
+  );
 }

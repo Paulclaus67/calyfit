@@ -141,6 +141,35 @@ export default function SessionsListPage() {
           );
         })}
       </section>
+
+      {/* CARTE EN BAS : PERSONNALISATION DES SÉANCES (style comme le planning) */}
+      <section className="mt-2 rounded-3xl border border-sky-700/80 bg-gradient-to-r from-sky-950 via-slate-950 to-slate-950 px-3 py-3 shadow-[0_14px_40px_rgba(15,23,42,0.9)]">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.7)]" />
+            <div className="flex flex-col">
+              <span className="text-[11px] text-sky-200">
+                Personnalisation des séances
+              </span>
+              <span className="text-xs font-semibold text-slate-50 truncate max-w-[180px]">
+                Ajuste les exos, séries et repos
+              </span>
+            </div>
+          </div>
+
+          <Link
+            href="/sessions/manage"
+            className="rounded-full border border-sky-400 bg-sky-500/20 px-3 py-1.5 text-[11px] font-semibold text-sky-50 hover:bg-sky-400/30"
+          >
+            Personnaliser les séances
+          </Link>
+        </div>
+
+        <p className="mt-1.5 text-[10px] text-slate-200">
+          Tu peux adapter chaque séance à ton niveau sans toucher à ton
+          planning&nbsp;: variantes, volume, temps de repos…
+        </p>
+      </section>
     </main>
   );
 }

@@ -2,6 +2,7 @@
 
 export type SessionHistoryEntry = {
   id: string;
+  // ⚠️ Ici on stocke le slug de la séance (ex: "seance_dos")
   sessionId: string;
   finishedAt: number; // timestamp ms
   durationSeconds: number;
@@ -37,8 +38,7 @@ function weekKeyFor(date: Date): string {
   const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   let day = d.getDay();
   if (day === 0) day = 7; // dimanche = 7
-  // on recule jusqu'au lundi
-  d.setDate(d.getDate() + 1 - day);
+  d.setDate(d.getDate() + 1 - day); // aller au lundi
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 }
 
@@ -69,11 +69,51 @@ export function saveHistory(entries: SessionHistoryEntry[]): void {
   }
 }
 
+/**
+ * Ajoute une entrée d'historique :
+ * - toujours dans localStorage
+ * - ET tente d'enregistrer en base via l'API /api/history
+ *
+ * sessionId = slug de la séance (ex: "seance_dos")
+ */
 export function addHistoryEntry(entry: SessionHistoryEntry): void {
+  // 1) LocalStorage (inchangé)
   const entries = loadHistory();
   entries.push(entry);
   saveHistory(entries);
+
+  // 2) Envoi vers l'API pour stocker en BDD
+  if (typeof window !== "undefined") {
+    console.log("[history] Ajout local + envoi API", entry);
+
+    void (async () => {
+      try {
+        const res = await fetch("/api/history", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            sessionSlug: entry.sessionId, // ⚠️ ICI : on attend un SLUG
+            finishedAt: entry.finishedAt,
+            durationSeconds: entry.durationSeconds,
+            totalCompletedSets: entry.totalCompletedSets,
+          }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          console.error("[history] API history non OK", res.status, err);
+        } else {
+          console.log("[history] API history OK");
+        }
+      } catch (e) {
+        console.error("[history] Erreur lors de l'envoi en BDD:", e);
+      }
+    })();
+  }
 }
+
 
 export function getSessionDoneToday(
   sessionId: string,
@@ -173,7 +213,7 @@ export function getYearStats(refDate: Date = new Date()): {
   };
 }
 
-// 🔹 nouvelles stats : quelles séances ont été faites cette semaine ?
+// 🔹 Séances faites cette semaine (en localStorage)
 export function getSessionsDoneThisWeek(
   refDate: Date = new Date()
 ): string[] {

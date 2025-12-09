@@ -2,213 +2,228 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { demoSessions, demoExercises } from "@/lib/demo-data";
-import type { Session, SessionExercise } from "@/lib/types";
-import {
-  getLastSessionEntry,
-  getSessionDoneToday,
-} from "@/lib/history";
 
-type Props = {
-  sessionId: string;
+type SessionSummaryFromApi = {
+  id: string;
+  slug: string;
+  name: string;
+  type: "classic" | "circuit";
+  estimatedDurationMinutes: number | null;
+  rounds?: number | null;
 };
 
-type SessionMeta = {
-  doneToday: boolean;
-  lastLabel?: string;
+type SessionDetailFromApi = {
+  id: string;
+  name: string;
+  type: "classic" | "circuit";
+  estimatedDurationMinutes: number | null;
+  rounds?: number | null;
+  items: {
+    exerciseId: string;
+    exerciseName: string;
+    muscleGroup: string;
+    sets: number;
+    reps: string;
+    restSeconds: number | null;
+  }[];
 };
 
-function formatReps(item: SessionExercise, session: Session): string {
-  if (item.reps.type === "reps") {
-    const reps =
-      typeof item.reps.value === "number"
-        ? `${item.reps.value} reps`
-        : `${item.reps.value}`;
-    if (session.type === "classic") {
-      const sets = item.sets ?? 1;
-      return `${sets} × ${reps}`;
-    }
-    return reps;
-  } else {
-    const seconds = item.reps.seconds;
-    if (session.type === "classic") {
-      const sets = item.sets ?? 1;
-      return `${sets} × ${seconds}s`;
-    }
-    return `${seconds}s`;
-  }
-}
+type SessionDetailProps = {
+  slug: string;
+};
 
-function formatRest(seconds?: number): string {
-  const s = seconds ?? 0;
-  if (s === 0) return "pas de repos";
-  if (s < 60) return `${s}s`;
-  const m = Math.floor(s / 60);
-  const rem = s % 60;
-  if (rem === 0) return `${m} min`;
-  return `${m} min ${rem}s`;
-}
-
-export function SessionDetail({ sessionId }: Props) {
-  const session = demoSessions.find((s) => s.id === sessionId);
-
-  const [meta, setMeta] = useState<SessionMeta>({
-    doneToday: false,
-  });
+export default function SessionDetail({ slug }: SessionDetailProps) {
+  const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [sessionSummary, setSessionSummary] =
+    useState<SessionSummaryFromApi | null>(null);
+  const [detail, setDetail] = useState<SessionDetailFromApi | null>(null);
 
   useEffect(() => {
-    if (!session) return;
-    const done = getSessionDoneToday(session.id);
-    const last = getLastSessionEntry(session.id);
-    let lastLabel: string | undefined = undefined;
-    if (last) {
-      const d = new Date(last.finishedAt);
-      lastLabel = d.toLocaleDateString("fr-FR", {
-        weekday: "short",
-        day: "2-digit",
-        month: "short",
-      });
-    }
-    setMeta({
-      doneToday: done,
-      lastLabel,
-    });
-  }, [session]);
+    let cancelled = false;
 
-  if (!session) {
+    async function load() {
+      try {
+        setLoading(true);
+        setErrorMsg(null);
+
+        const sessionsRes = await fetch("/api/sessions/all");
+        if (!sessionsRes.ok) {
+          throw new Error("Impossible de charger la liste des séances.");
+        }
+        const sessionsData = await sessionsRes.json();
+        const sessions: SessionSummaryFromApi[] = sessionsData.sessions ?? [];
+
+        const found = sessions.find((s) => s.slug === slug);
+        if (!found) {
+          throw new Error(
+            "Cette séance n'existe pas (slug introuvable dans la BDD)."
+          );
+        }
+
+        if (cancelled) return;
+        setSessionSummary(found);
+
+        const detailRes = await fetch(
+          `/api/sessions/detail?sessionId=${found.id}`
+        );
+        if (!detailRes.ok) {
+          throw new Error("Impossible de charger le détail de cette séance.");
+        }
+        const d: SessionDetailFromApi = await detailRes.json();
+        if (cancelled) return;
+
+        setDetail(d);
+        setLoading(false);
+      } catch (e: any) {
+        console.error("[SessionDetail] load error:", e);
+        if (!cancelled) {
+          setErrorMsg(e?.message ?? "Erreur inattendue lors du chargement.");
+          setLoading(false);
+        }
+      }
+    }
+
+    load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
+
+  if (loading) {
     return (
-      <main className="px-4 pb-4">
-        <header className="pt-3 mb-3">
-          <Link
-            href="/sessions"
-            className="inline-flex items-center gap-1 rounded-full border border-slate-800 bg-slate-950/80 px-3 py-1 text-[11px] text-slate-300 hover:bg-slate-900"
-          >
-            <span className="text-sm">←</span>
-            <span>Retour aux séances</span>
-          </Link>
-        </header>
-        <section className="rounded-2xl border border-red-900 bg-red-950/40 p-4">
-          <h1 className="text-lg font-semibold mb-1">Séance introuvable</h1>
-          <p className="text-sm text-red-100">
-            Impossible de trouver cette séance. Retourne à la liste des séances.
-          </p>
-        </section>
+      <main className="space-y-3 px-4 pb-4 pt-3">
+        <Link
+          href="/sessions"
+          className="inline-flex items-center gap-1 rounded-full border border-slate-800 bg-slate-950/80 px-3 py-1 text-[11px] text-slate-300 hover:bg-slate-900"
+        >
+          <span className="text-sm">←</span>
+          <span>Retour aux séances</span>
+        </Link>
+        <p className="text-sm text-slate-200">Chargement de la séance…</p>
       </main>
     );
   }
 
-  const typeLabel =
-    session.type === "circuit" ? "Circuit" : "Séance classique";
-
-  let statusText = "Jamais effectuée";
-  let statusColor = "text-slate-400";
-  if (meta.doneToday) {
-    statusText = "Séance effectuée aujourd'hui ✅";
-    statusColor = "text-emerald-400";
-  } else if (meta.lastLabel) {
-    statusText = `Dernière fois : ${meta.lastLabel}`;
-    statusColor = "text-slate-300";
+  if (errorMsg || !sessionSummary || !detail) {
+    return (
+      <main className="space-y-3 px-4 pb-4 pt-3">
+        <Link
+          href="/sessions"
+          className="inline-flex items-center gap-1 rounded-full border border-slate-800 bg-slate-950/80 px-3 py-1 text-[11px] text-slate-300 hover:bg-slate-900"
+        >
+          <span className="text-sm">←</span>
+          <span>Retour aux séances</span>
+        </Link>
+        <p className="text-sm text-red-300">
+          {errorMsg ?? "Impossible de charger cette séance."}
+        </p>
+      </main>
+    );
   }
 
+  const isCircuit = detail.type === "circuit";
+
   return (
-    <main className="px-4 pb-4 space-y-4">
-      {/* HEADER + RETOUR */}
-      <header className="pt-3 space-y-3">
-        <div>
-          <Link
-            href="/sessions"
-            className="inline-flex items-center gap-1 rounded-full border border-slate-800 bg-slate-950/80 px-3 py-1 text-[11px] text-slate-300 hover:bg-slate-900"
-          >
-            <span className="text-sm">←</span>
-            <span>Retour aux séances</span>
-          </Link>
-        </div>
+    <main className="space-y-4 px-4 pb-4 pt-3">
+      {/* Bouton retour */}
+      <button
+        type="button"
+        onClick={() => history.back()}
+        className="inline-flex items-center gap-1 rounded-full border border-slate-800 bg-slate-950/80 px-3 py-1 text-[11px] text-slate-300 hover:bg-slate-900"
+      >
+        <span className="text-sm">←</span>
+        <span>Retour aux séances</span>
+      </button>
 
-        <div className="space-y-1">
-          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
-            Séance
-          </p>
-          <h1 className="text-2xl font-semibold text-slate-50">
-            {session.name}
-          </h1>
-          <p className="text-xs text-slate-400">
-            {typeLabel}
-            {session.estimatedDurationMinutes &&
-              ` · ~${session.estimatedDurationMinutes} min`}
-          </p>
-          <p className={`text-[11px] ${statusColor}`}>{statusText}</p>
-        </div>
-
-        <div className="flex gap-2">
-          <Link
-            href={`/sessions/${session.slug}/run`}
-            className="inline-flex flex-1 items-center justify-center rounded-xl bg-sky-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-400 active:scale-[0.99]"
-          >
-            Démarrer la séance
-          </Link>
-        </div>
+      {/* Header séance */}
+      <header className="space-y-1">
+        <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
+          Séance
+        </p>
+        <h1 className="text-2xl font-semibold text-slate-50">
+          {detail.name}
+        </h1>
+        <p className="text-xs text-slate-400">
+          {isCircuit ? "Circuit" : "Séance classique"}
+          {detail.estimatedDurationMinutes &&
+            ` · ~${detail.estimatedDurationMinutes} min`}
+          {isCircuit && detail.rounds
+            ? ` · ${detail.rounds} tour${detail.rounds > 1 ? "s" : ""}`
+            : ""}
+        </p>
       </header>
 
-      {/* LISTE DES EXOS */}
-      <section className="space-y-2">
-        <h2 className="text-sm font-semibold text-slate-100">
-          Exercices de la séance
-        </h2>
-        <ul className="space-y-2">
-          {session.items.map((item) => {
-            const exo = demoExercises.find((e) => e.id === item.exerciseId);
-            const repsLabel = formatReps(item, session);
-            const restLabel = formatRest(item.restSeconds);
+      {/* CTA lancer la séance */}
+      <section className="rounded-3xl border border-emerald-600/70 bg-gradient-to-r from-emerald-950 via-slate-950 to-slate-950 px-3 py-3 shadow-[0_14px_40px_rgba(15,23,42,0.9)]">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.7)]" />
+            <div className="flex flex-col">
+              <span className="text-[11px] text-emerald-200">
+                Prêt à lancer ?
+              </span>
+              <span className="text-xs font-semibold text-slate-50 truncate max-w-[180px]">
+                Mode entraînement avec chrono et progression
+              </span>
+            </div>
+          </div>
 
-            return (
-              <li
-                key={item.id}
-                className="flex items-start justify-between rounded-2xl border border-slate-800 bg-slate-950/80 px-3 py-2"
-              >
-                <div className="flex-1 pr-2">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-[11px] text-slate-300">
-                      {item.order}
-                    </span>
-                    <div>
-                      <p className="text-sm font-medium text-slate-50">
-                        {exo?.name ?? item.exerciseId}
-                      </p>
-                      <p className="text-[11px] text-slate-400">
-                        {repsLabel}
-                      </p>
-                    </div>
-                  </div>
-                  {item.note && (
-                    <p className="mt-1 text-[11px] text-slate-500 italic">
-                      {item.note}
-                    </p>
-                  )}
-                  {exo?.description && (
-                    <p className="mt-1 text-[11px] text-slate-500">
-                      {exo.description}
-                    </p>
-                  )}
-                </div>
-                <div className="text-right">
-                  <p className="text-[11px] text-slate-400">
-                    Repos {restLabel}
-                  </p>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+          <Link
+            href={`/sessions/${sessionSummary.slug}/run`}
+            className="rounded-full border border-emerald-400 bg-emerald-500/20 px-3 py-1.5 text-[11px] font-semibold text-emerald-50 hover:bg-emerald-400/30"
+          >
+            Lancer la séance
+          </Link>
+        </div>
+
+        <p className="mt-1.5 text-[10px] text-slate-200">
+          Affichage optimisé pour le street workout : chrono lisible, phases
+          travail/repos bien visibles, sonnerie à la fin des repos.
+        </p>
       </section>
 
-      {/* FOOTER / CTA SECONDAIRE */}
-      <section>
-        <Link
-          href="/planning"
-          className="block rounded-2xl border border-slate-800 bg-slate-950/80 px-3 py-3 text-[11px] text-slate-300 hover:bg-slate-900"
-        >
-          Voir cette séance dans le planning →
-        </Link>
+      {/* Détails des exercices */}
+      <section className="space-y-2 rounded-3xl border border-slate-800 bg-slate-950/90 px-3 py-3">
+        <p className="text-[11px] text-slate-400 uppercase tracking-[0.14em]">
+          Plan de la séance
+        </p>
+
+        {detail.items.length === 0 && (
+          <p className="text-[11px] text-slate-500">
+            Aucun exercice n&apos;est encore configuré pour cette séance.
+          </p>
+        )}
+
+        <div className="space-y-2">
+          {detail.items.map((it, index) => (
+            <div
+              key={`${it.exerciseId}-${index}`}
+              className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/80 px-3 py-2"
+            >
+              <div className="flex-1">
+                <p className="text-[12px] font-medium text-slate-100">
+                  {it.exerciseName}
+                </p>
+                <p className="text-[10px] text-slate-500">
+                  {it.muscleGroup || "Street workout"}
+                </p>
+                <p className="mt-1 text-[10px] text-slate-400">
+                  {it.sets} série{it.sets > 1 ? "s" : ""} ·{" "}
+                  {it.reps || "reps libres"}
+                  {typeof it.restSeconds === "number" &&
+                  it.restSeconds > 0
+                    ? ` · Repos ${it.restSeconds}s`
+                    : ""}
+                </p>
+              </div>
+              <span className="ml-2 text-[11px] text-slate-500">
+                #{index + 1}
+              </span>
+            </div>
+          ))}
+        </div>
       </section>
     </main>
   );

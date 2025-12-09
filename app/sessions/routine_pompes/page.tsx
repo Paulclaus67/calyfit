@@ -1,5 +1,9 @@
-import { SessionDetail } from "@/app/_components/SessionDetail";
+import SessionDetail from "../../_components/SessionDetail";
 
-export default function Page() {
-  return <SessionDetail sessionId="routine_pompes" />;
+export default function RoutinePompesPage() {
+  return (
+    <main className="px-4 pb-4 pt-3">
+      <SessionDetail slug="routine_pompes" />
+    </main>
+  );
 }

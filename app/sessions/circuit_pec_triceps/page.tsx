@@ -1,5 +1,9 @@
-import { SessionDetail } from "@/app/_components/SessionDetail";
+import SessionDetail from "../../_components/SessionDetail";
 
-export default function Page() {
-  return <SessionDetail sessionId="circuit_pec_triceps" />;
+export default function CircuitPecTricepsPage() {
+  return (
+    <main className="px-4 pb-4 pt-3">
+      <SessionDetail slug="circuit_pec_triceps" />
+    </main>
+  );
 }
