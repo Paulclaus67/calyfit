@@ -3,10 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { DayName } from "@/lib/types";
-import {
-  getSessionDoneToday,
-  getSessionsDoneThisWeek,
-} from "@/lib/history";
+import { getSessionDoneToday } from "@/lib/history";
+import { CalendarDays, Dumbbell, User } from "lucide-react";
 
 const DAY_LABELS_FR: Record<DayName, string> = {
   monday: "Lundi",
@@ -71,6 +69,11 @@ type Props = {
   home: HomeData;
 };
 
+type HistoryApiResponse = {
+  sessionsDoneThisWeek?: string[];
+  sessionsDoneToday?: string[];
+};
+
 export default function HomeClient({ home }: Props) {
   const {
     dayName,
@@ -92,16 +95,48 @@ export default function HomeClient({ home }: Props) {
   const [doneToday, setDoneToday] = useState(false);
   const [doneThisWeekIds, setDoneThisWeekIds] = useState<string[]>([]);
 
-  // Lecture de l'historique local (localStorage)
+  // 1) lecture locale (instantané)
   useEffect(() => {
     if (session) {
       setDoneToday(getSessionDoneToday(session.id));
     } else {
       setDoneToday(false);
     }
-    setDoneThisWeekIds(getSessionsDoneThisWeek());
   }, [session?.id]);
 
+  // 2) lecture depuis la BDD via /api/history (comme le planning)
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadHistoryFromServer() {
+      try {
+        const res = await fetch("/api/history", { cache: "no-store" });
+        if (!res.ok) return;
+
+        const data: HistoryApiResponse = await res.json();
+        if (cancelled) return;
+
+        if (Array.isArray(data.sessionsDoneThisWeek)) {
+          setDoneThisWeekIds(data.sessionsDoneThisWeek);
+        }
+
+        if (session && Array.isArray(data.sessionsDoneToday)) {
+          if (data.sessionsDoneToday.includes(session.id)) {
+            setDoneToday(true);
+          }
+        }
+      } catch (e) {
+        console.error("[Home] Erreur chargement historique", e);
+      }
+    }
+
+    loadHistoryFromServer();
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.id]);
+
+  // ordre L -> D
   const orderedWeek = useMemo(() => {
     const order: DayName[] = [
       "monday",
@@ -138,18 +173,6 @@ export default function HomeClient({ home }: Props) {
   const todayWeekEntry = orderedWeek.find((d) => d.day === dayName);
   const todayHasSession = !!todayWeekEntry?.hasSession && !!session;
   const todayIsRest = isRestDay || !todayHasSession;
-
-  let mainCtaLabel = "Lancer la séance";
-  let mainCtaVariant: "primary" | "outline" = "primary";
-  let mainCtaHref = session ? `/sessions/${session.slug}` : "/planning";
-
-  if (todayIsRest) {
-    mainCtaLabel = "Voir le planning de la semaine";
-    mainCtaVariant = "outline";
-    mainCtaHref = "/planning";
-  } else if (doneToday) {
-    mainCtaLabel = "Refaire la séance";
-  }
 
   const weekSummaryText =
     plannedTrainingDays > 0
@@ -194,7 +217,6 @@ export default function HomeClient({ home }: Props) {
       {/* BLOC PRINCIPAL : SÉANCE DU JOUR */}
       <section>
         <div className="relative overflow-hidden rounded-3xl border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-950 px-4 py-4 shadow-[0_18px_40px_rgba(0,0,0,0.65)]">
-          {/* halo de couleur */}
           <div className="pointer-events-none absolute -right-10 -top-8 h-40 w-40 rounded-full bg-sky-500/20 blur-3xl" />
 
           <div className="relative z-10 space-y-3">
@@ -224,7 +246,9 @@ export default function HomeClient({ home }: Props) {
                       {session.name}
                     </p>
                     <p className="text-xs text-slate-400">
-                      {session.type === "circuit" ? "Circuit" : "Séance classique"}
+                      {session.type === "circuit"
+                        ? "Circuit"
+                        : "Séance classique"}
                       {session.estimatedDurationMinutes &&
                         ` · ~${session.estimatedDurationMinutes} min`}
                     </p>
@@ -261,17 +285,26 @@ export default function HomeClient({ home }: Props) {
               )}
             </div>
 
-            {/* CTA principal */}
             <Link
-              href={mainCtaHref}
+              href={
+                todayIsRest
+                  ? "/planning"
+                  : session
+                  ? `/sessions/${session.slug}`
+                  : "/planning"
+              }
               className={
                 "mt-1 inline-flex w-full items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold transition active:scale-[0.98] " +
-                (mainCtaVariant === "primary"
-                  ? "bg-sky-500 text-white shadow-sm hover:bg-sky-400"
-                  : "border border-slate-700 bg-slate-900/80 text-slate-100 hover:bg-slate-800")
+                (todayIsRest
+                  ? "border border-slate-700 bg-slate-900/80 text-slate-100 hover:bg-slate-800"
+                  : "bg-sky-500 text-white shadow-sm hover:bg-sky-400")
               }
             >
-              {mainCtaLabel}
+              {todayIsRest
+                ? "Voir le planning de la semaine"
+                : doneToday
+                ? "Refaire la séance"
+                : "Lancer la séance"}
             </Link>
           </div>
         </div>
@@ -344,25 +377,26 @@ export default function HomeClient({ home }: Props) {
           Accès rapide
         </h2>
         <div className="grid grid-cols-3 gap-2">
-          <Link
-            href="/sessions"
-            className="flex flex-col items-center justify-center rounded-2xl border border-slate-800 bg-slate-950/90 px-2 py-2 text-[11px] text-slate-200 hover:bg-slate-900"
-          >
-            <span className="text-lg">🏋️‍♂️</span>
-            <span>Séances</span>
-          </Link>
+          {/* même ordre que la BottomNav, sans "Aujourd'hui" */}
           <Link
             href="/planning"
-            className="flex flex-col items-center justify-center rounded-2xl border border-slate-800 bg-slate-950/90 px-2 py-2 text-[11px] text-slate-200 hover:bg-slate-900"
+            className="flex flex-col items-center justify-center rounded-2xl border border-slate-800 bg-slate-950/90 px-3 py-2 text-[11px] text-slate-200 hover:bg-slate-900"
           >
-            <span className="text-lg">📅</span>
+            <CalendarDays className="h-5 w-5 mb-1 text-slate-100" />
             <span>Planning</span>
           </Link>
           <Link
-            href="/profile"
-            className="flex flex-col items-center justify-center rounded-2xl border border-slate-800 bg-slate-950/90 px-2 py-2 text-[11px] text-slate-200 hover:bg-slate-900"
+            href="/sessions"
+            className="flex flex-col items-center justify-center rounded-2xl border border-slate-800 bg-slate-950/90 px-3 py-2 text-[11px] text-slate-200 hover:bg-slate-900"
           >
-            <span className="text-lg">👤</span>
+            <Dumbbell className="h-5 w-5 mb-1 text-slate-100" />
+            <span>Séances</span>
+          </Link>
+          <Link
+            href="/profile"
+            className="flex flex-col items-center justify-center rounded-2xl border border-slate-800 bg-slate-950/90 px-3 py-2 text-[11px] text-slate-200 hover:bg-slate-900"
+          >
+            <User className="h-5 w-5 mb-1 text-slate-100" />
             <span>Profil</span>
           </Link>
         </div>

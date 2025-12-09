@@ -139,18 +139,18 @@ export default function PlanningClient({ weekPlan }: Props) {
   return (
     <main className="px-4 pb-4 space-y-5">
       {/* HEADER */}
-      <header className="pt-3">
-        <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
-          Planning
-        </p>
-        <h1 className="mt-1 text-2xl font-semibold text-slate-50">
-          Semaine type
-        </h1>
-        <p className="text-xs text-slate-400">
-          {trainingDays} jour{trainingDays > 1 ? "s" : ""} d&apos;entraînement ·{" "}
-          {restDays} jour{restDays > 1 ? "s" : ""} de repos
-        </p>
-      </header>
+      <header className="pt-3 space-y-1">
+  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
+    Planning
+  </p>
+  <h1 className="text-2xl font-semibold text-slate-50">
+    Ta semaine type
+  </h1>
+  <p className="text-xs text-slate-400">
+    Vue rapide de tes séances prévues pour chaque jour.
+  </p>
+</header>
+
 
       {/* MINI BARRE DES JOURS */}
       <section>

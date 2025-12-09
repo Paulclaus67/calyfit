@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth-server";
+import { Edit3 } from "lucide-react";
 
 type DayName =
   | "monday"
@@ -146,25 +147,14 @@ export default async function PlanningPage() {
 
   return (
     <main className="px-4 pb-4 pt-3 space-y-4">
-      {/* HEADER */}
-      <header className="space-y-1 pb-2">
+      {/* HEADER sans bouton Gérer */}
+      <header className="pt-3 space-y-1">
         <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
-          Planning
+          PLANNING
         </p>
-
-        <div className="flex items-center justify-between gap-3">
-          <h1 className="text-2xl font-semibold text-slate-50">
-            Ta semaine type
-          </h1>
-
-          <a
-            href="/planning/manage"
-            className="rounded-full border border-slate-700 bg-slate-900/80 px-3 py-1.5 text-[11px] text-slate-200 hover:bg-slate-800"
-          >
-            Gérer
-          </a>
-        </div>
-
+        <h1 className="text-2xl font-semibold text-slate-50">
+          Ta semaine type
+        </h1>
         <p className="text-xs text-slate-400">
           Vue rapide de tes séances prévues pour chaque jour.
         </p>
@@ -280,11 +270,7 @@ export default async function PlanningPage() {
 
           // Si repos → pas cliquable
           if (isRest || !d.session) {
-            return (
-              <div key={d.day}>
-                {content}
-              </div>
-            );
+            return <div key={d.day}>{content}</div>;
           }
 
           // Si séance prévue → la carte entière devient un lien vers la séance
@@ -300,34 +286,29 @@ export default async function PlanningPage() {
         })}
       </section>
 
-      {/* CARTE EN BAS : PROGRAMME ACTIF, BIEN DISTINCTE */}
+      {/* CARTE EN BAS : PROGRAMME ACTIF, SIMPLE + BOUTON MODIFIER */}
       {weekPlanForClient && (
-        <section className="mt-3 rounded-3xl border border-sky-700/80 bg-gradient-to-r from-sky-950 via-slate-950 to-slate-950 px-3 py-3 shadow-[0_14px_40px_rgba(15,23,42,0.9)]">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.7)]" />
-              <div className="flex flex-col">
-                <span className="text-[11px] text-sky-200">
-                  Programme actuellement utilisé
-                </span>
-                <span className="text-xs font-semibold text-slate-50 truncate max-w-[180px]">
-                  {weekPlanForClient.name}
-                </span>
+        <section className="mt-2">
+          <div className="rounded-3xl border border-slate-800 bg-slate-950/90 px-3 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0 space-y-0.5">
+                <p className="text-[10px] uppercase tracking-[0.16em] text-slate-500">
+                  Programme actuel
+                </p>
+                <p className="truncate text-sm font-medium text-slate-50">
+                  {weekPlanForClient.name ?? "Programme street-workout 5 jours"}
+                </p>
               </div>
+
+              <Link
+                href="/planning/manage"
+                className="inline-flex items-center gap-1.5 rounded-full border border-sky-500 bg-sky-500/10 px-3 py-1.5 text-[11px] font-medium text-sky-50 hover:bg-sky-500/20"
+              >
+                <Edit3 className="h-3.5 w-3.5" />
+                <span>Modifier</span>
+              </Link>
             </div>
-
-            <a
-              href="/planning/manage"
-              className="rounded-full border border-sky-400 bg-sky-500/20 px-3 py-1.5 text-[11px] font-semibold text-sky-50 hover:bg-sky-400/30"
-            >
-              Modifier ce programme
-            </a>
           </div>
-
-          <p className="mt-1.5 text-[10px] text-slate-200">
-            Ce programme sert de base pour l&apos;accueil, la séance du jour
-            et tes statistiques.
-          </p>
         </section>
       )}
     </main>
